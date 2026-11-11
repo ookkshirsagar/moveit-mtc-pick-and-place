@@ -1,0 +1,34 @@
+<?xml version="1.0"?> <package format="3">
+
+<name>ur5e_rh56dfx_manipulation</name>
+<version>1.0.0</version>
+
+<description> Modular manipulation pipeline for UR5e + RH56DFX using MoveIt Task Constructor </description> <maintainer email="ookkshirsagar@gmail.com"> Omkar Chandrakant Kshirsagar </maintainer>
+
+<license>Apache-2.0</license>
+
+<!-- Build system -->
+
+<buildtool_depend>ament_cmake</buildtool_depend>
+
+<!-- Core dependencies -->
+
+<depend>rclcpp</depend>
+
+<depend>moveit_task_constructor_core</depend>
+<depend>moveit_ros_planning</depend>
+<depend>moveit_ros_planning_interface</depend>
+
+<!-- Scene handling -->
+
+<depend>moveit_msgs</depend>
+<depend>shape_msgs</depend>
+<depend>geometry_msgs</depend>
+
+<!-- Runtime -->
+
+<exec_depend>ur5e_rh56dfx_moveit_config</exec_depend>
+
+<export> <build_type>ament_cmake</build_type> </export> 
+
+</package>
