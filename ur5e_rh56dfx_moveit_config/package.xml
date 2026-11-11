@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<package format="3">
+
+  <name>ur5e_rh56dfx_moveit_config</name>
+  <version>1.0.0</version>
+
+  <description>
+    MoveIt configuration for UR5e + RH56DFX system
+  </description>
+
+  <maintainer email="ookkshirsagar@gmail.com">
+    Omkar Chandrakant Kshirsagar
+  </maintainer>
+
+  <license>Apache-2.0</license>
+
+  <!-- Build -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- MoveIt -->
+  <exec_depend>moveit_ros_move_group</exec_depend>
+  <exec_depend>moveit_configs_utils</exec_depend>
+  <exec_depend>moveit_ros_visualization</exec_depend>
+
+  <!-- Planning + kinematics -->
+  <exec_depend>moveit_kinematics</exec_depend>
+  <exec_depend>moveit_planners</exec_depend>
+  <exec_depend>moveit_simple_controller_manager</exec_depend>
+
+  <!-- ROS2 control -->
+  <exec_depend>controller_manager</exec_depend>
+
+  <!-- Robot -->
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>ur5e_rh56dfx_description</exec_depend>
+
+  <!-- Visualization -->
+  <exec_depend>rviz2</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+
+</package>

@@ -1,0 +1,13 @@
+cartesian_limits:
+
+  # Translational velocity (m/s)
+  max_trans_vel: 0.5        # safer & realistic (not 1.0)
+
+  # Acceleration (m/s²)
+  max_trans_acc: 1.2        # smoother motion
+
+  # Deceleration (must be negative)
+  max_trans_dec: -1.5       # symmetric-ish braking
+
+  # Rotational velocity (rad/s)
+  max_rot_vel: 1.0          # reduced for stability

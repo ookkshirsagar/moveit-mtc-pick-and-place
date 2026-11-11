@@ -1,0 +1,25 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: ur5e_rh56dfx_description
+    relative_path: urdf/ur5e_rh56dfx_system.xacro
+  srdf:
+    relative_path: config/ur5e_rh56dfx_system_left.srdf
+  package_settings:
+    author_name: Omkar Chandrakant Kshirsagar
+    author_email: ookkshirsagar@gmail.com
+    generated_timestamp: 1773323079
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity
+  modified_urdf:
+    xacros:
+      - control_xacro
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity

@@ -1,0 +1,33 @@
+# ==========================================================
+# Planning Pipelines Configuration
+# ==========================================================
+planning_pipelines:
+
+  # List of available planning pipelines
+  # These names are used to select which planner backend to use
+  pipeline_names:
+    - ompl
+    - pilz_industrial_motion_planner
+
+  # Default pipeline used if none is explicitly specified
+  default_planning_pipeline: ompl
+
+
+  # ==========================================================
+  # OMPL Pipeline
+  # ==========================================================
+  ompl:
+    # Sampling-based motion planning
+    # - explores configuration space
+    # - good for obstacle avoidance and complex scenes
+    planning_plugin: ompl_interface/OMPLPlanner
+
+
+  # ==========================================================
+  # Pilz Pipeline
+  # ==========================================================
+  pilz_industrial_motion_planner:
+    # Command-based industrial planner
+    # - deterministic motions (PTP, LIN, CIRC)
+    # - best for structured, predictable movements
+    planning_plugin: pilz_industrial_motion_planner/CommandPlanner

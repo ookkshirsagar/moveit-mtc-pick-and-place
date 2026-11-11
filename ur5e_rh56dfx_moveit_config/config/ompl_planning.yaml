@@ -1,0 +1,117 @@
+# ==========================================================
+# OMPL Planner Plugin Configuration
+# ==========================================================
+
+# Planner plugin used by MoveIt
+planning_plugins:
+  - ompl_interface/OMPLPlanner
+
+# Allowed deviation between actual robot state and joint limits
+# Helps tolerate small numerical errors in start state
+start_state_max_bounds_error: 0.05
+
+
+# ==========================================================
+# Request Adapters (pre-processing)
+# ==========================================================
+# These modify or validate the planning request BEFORE planning
+request_adapters:
+  - default_planning_request_adapters/ResolveConstraintFrames   # ensures constraints are in correct frames
+  - default_planning_request_adapters/ValidateWorkspaceBounds   # checks workspace limits
+  - default_planning_request_adapters/CheckStartStateBounds     # ensures joints are within limits
+  - default_planning_request_adapters/CheckStartStateCollision  # ensures start state is collision-free
+
+
+# ==========================================================
+# Response Adapters (post-processing)
+# ==========================================================
+# These refine or validate the solution AFTER planning
+response_adapters:
+  - default_planning_response_adapters/AddTimeOptimalParameterization  # adds velocity/acceleration timing
+  - default_planning_response_adapters/ValidateSolution               # checks trajectory validity
+  - default_planning_response_adapters/DisplayMotionPath              # publishes path for visualization
+
+
+# ==========================================================
+# Planner Configurations
+# ==========================================================
+planner_configs:
+
+  # ---------------- RRTConnect (fast, default) ----------------
+  RRTConnectkConfigDefault:
+    type: geometric::RRTConnect
+    range: 0.0              # auto-tuned step size
+    goal_bias: 0.05         # 5% chance to sample goal → balances exploration
+
+  # ---------------- KPIECE (good for constrained spaces) ----------------
+  KPIECEkConfigDefault:
+    type: geometric::KPIECE
+    range: 0.0
+    goal_bias: 0.05
+    border_fraction: 0.9                    # bias exploration toward boundary
+    failed_expansion_score_factor: 0.5      # penalize failed expansions
+    min_valid_path_fraction: 0.5            # allow partial validity
+
+  # ---------------- RRT* (optimal but slower) ----------------
+  RRTstarkConfigDefault:
+    type: geometric::RRTstar
+    range: 0.0
+    goal_bias: 0.05
+    delay_collision_checking: 1             # speeds up by delaying collision checks
+
+  # ---------------- TRRT (cost-aware exploration) ----------------
+  TRRTkConfigDefault:
+    type: geometric::TRRT
+    range: 0.0
+    goal_bias: 0.05
+    max_states_failed: 10
+    temp_change_factor: 2.0
+    min_temperature: 1e-9
+    init_temperature: 1e-5
+    frontier_threshold: 0.0
+    frontier_node_ratio: 0.1
+
+
+# ==========================================================
+# Arm planning group
+# ==========================================================
+arm:
+  # Default planner used if none specified
+  default_planner_config: RRTConnectkConfigDefault
+
+  # Available planners for this group
+  planner_configs:
+    - RRTConnectkConfigDefault
+    - KPIECEkConfigDefault
+    - RRTstarkConfigDefault
+    - TRRTkConfigDefault
+
+  # Projection used for planning heuristics (important for KPIECE)
+  projection_evaluator: joints(shoulder_pan_joint,shoulder_lift_joint)
+
+  # Collision checking resolution:
+  # smaller → more accurate, slower
+  longest_valid_segment_fraction: 0.005
+
+  # Planning limits
+  planning_time: 10.0
+  num_planning_attempts: 10
+
+
+# ==========================================================
+# Hand (gripper) planning group
+# ==========================================================
+hand:
+  # Default planner
+  default_planner_config: RRTConnectkConfigDefault
+
+  # Only one planner needed (simple joint motion)
+  planner_configs:
+    - RRTConnectkConfigDefault
+
+  # Less strict collision resolution (gripper is simple)
+  longest_valid_segment_fraction: 0.02
+
+  # Shorter planning time (fast motions)
+  planning_time: 5.0
+  num_planning_attempts: 5

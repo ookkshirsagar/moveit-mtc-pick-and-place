@@ -1,0 +1,266 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="ur5e_rh56dfx_system">
+
+  <link name="world"/>
+
+  <!-- ========================================================= -->
+  <!-- UR Arguments (Standard Interface)                         -->
+  <!-- ========================================================= -->
+
+  <xacro:arg name="name" default="ur5e"/>
+  <xacro:arg name="ur_type" default="ur5e"/>
+  <xacro:arg name="tf_prefix" default=""/>
+
+  <!-- ========================================================= -->
+  <!-- Hardware Backend Selection                                -->
+  <!-- hardware:=mock  → mock_components/GenericSystem          -->
+  <!-- hardware:=isaac → topic_based_ros2_control               -->
+  <!-- ========================================================= -->
+  <xacro:arg name="hardware" default="mock"/>
+  <xacro:property name="hardware_backend" value="$(arg hardware)"/>
+
+  <!-- ========================================================= -->
+  <!-- Environment: tabletop + robot mount (primitives only)     -->
+  <!-- ========================================================= -->
+  <link name="table_top">
+    <visual>
+      <origin xyz="0 0 0.425"/>
+      <geometry><box size="1.5 1.0 0.85"/></geometry>
+      <material name="table_gray"><color rgba="0.55 0.57 0.60 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.85"/>
+      <geometry><box size="1.5 1.0 0.01"/></geometry>
+    </collision>
+  </link>
+  <joint name="world_to_table_top" type="fixed">
+    <parent link="world"/>
+    <child link="table_top"/>
+  </joint>
+
+  <link name="robot_base_plate">
+    <visual>
+      <origin xyz="0 0 0.0125"/>
+      <geometry><box size="0.2 0.2 0.025"/></geometry>
+      <material name="plate_gray"><color rgba="0.75 0.75 0.78 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.0125"/>
+      <geometry><box size="0.2 0.2 0.025"/></geometry>
+    </collision>
+  </link>
+  <joint name="world_to_robot_base_plate" type="fixed">
+    <parent link="world"/>
+    <child link="robot_base_plate"/>
+    <origin xyz="0.5 0 0.85" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ========================================================= -->
+  <!-- Include UR5e Robot                                        -->
+  <!-- ========================================================= -->
+  <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
+
+  <xacro:ur_robot
+      name="$(arg name)"
+      parent="robot_base_plate"
+      tf_prefix="$(arg tf_prefix)"
+      joint_limits_parameters_file="$(find ur_description)/config/$(arg ur_type)/joint_limits.yaml"
+      kinematics_parameters_file="$(find ur_description)/config/$(arg ur_type)/default_kinematics.yaml"
+      physical_parameters_file="$(find ur_description)/config/$(arg ur_type)/physical_parameters.yaml"
+      visual_parameters_file="$(find ur_description)/config/$(arg ur_type)/visual_parameters.yaml">
+    <origin xyz="0 0 0.025" rpy="0 0 0"/>
+  </xacro:ur_robot>
+
+  <!-- ========================================================= -->
+  <!-- Hand Selection Argument                                   -->
+  <!-- ========================================================= -->
+  <xacro:arg name="side" default="left"/>
+  <xacro:arg name="prefix" default="$(arg side)_"/>
+  <xacro:property name="side_s" value="$(arg side)"/>
+  <xacro:property name="prefix_p" value="$(arg prefix)"/>
+
+  <!-- ========================================================= -->
+  <!-- Flange spacer                                          -->
+  <!-- ========================================================= -->
+  <link name="flange_spacer_link">
+    <visual>
+      <origin xyz="0 0 0.0095" rpy="0 0 0"/>
+      <geometry><cylinder length="0.019" radius="0.0315"/></geometry>
+      <material name="cap_gray"><color rgba="0.89 0.91 0.93 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.0095" rpy="0 0 0"/>
+      <geometry><cylinder length="0.019" radius="0.0315"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
+    </inertial>
+  </link>
+
+  <joint name="tool0_to_flange_spacer" type="fixed">
+    <parent link="tool0"/>
+    <child link="flange_spacer_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ========================================================= -->
+  <!-- Hand adapter frame                                         -->
+  <!-- ========================================================= -->
+  <link name="inspire_adapter_link">
+    <inertial>
+      <mass value="0.1"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
+    </inertial>
+  </link>
+
+  <joint name="flange_spacer_to_inspire_adapter" type="fixed">
+    <parent link="flange_spacer_link"/>
+    <child link="inspire_adapter_link"/>
+    <origin xyz="0 0 0.01" rpy="1.5708 0 -1.5708"/>
+  </joint>
+
+  <!-- ========================================================= -->
+  <!-- Include Generic RH56DFX Hand                              -->
+  <!-- ========================================================= -->
+  <xacro:include filename="$(find rh56dfx_description)/urdf/rh56dfx_macro.xacro"/>
+  <xacro:rh56dfx_hand side="${side_s}" prefix="${prefix_p}"/>
+
+  <!-- ========================================================= -->
+  <!-- Include Mount Macro                                       -->
+  <!-- ========================================================= -->
+  <xacro:include filename="$(find ur5e_rh56dfx_description)/urdf/rh56dfx_mount.xacro"/>
+  <xacro:mount_rh56dfx parent_link="inspire_adapter_link" prefix="${prefix_p}"/>
+
+  <!-- ========================================================= -->
+  <!-- TCP Frame                                                 -->
+  <!-- ========================================================= -->
+  <link name="${prefix_p}tcp"/>
+  <joint name="${prefix_p}tcp_joint" type="fixed">
+    <parent link="${prefix_p}hand_base"/>
+    <child link="${prefix_p}tcp"/>
+    <origin xyz="0 0.08 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ========================================================= -->
+  <!-- ros2_control Hardware Interface                           -->
+  <!--                                                           -->
+  <!-- NOTE: xacro:unless + xacro:if guarantees EXACTLY ONE    -->
+  <!-- plugin tag is emitted — two plugins = crash.             -->
+  <!-- ========================================================= -->
+  <ros2_control name="ur5e_rh56dfx_system" type="system">
+    <hardware>
+
+      <!-- Default: mock_components — no simulator required -->
+      <xacro:unless value="${hardware_backend == 'isaac'}">
+        <plugin>mock_components/GenericSystem</plugin>
+      </xacro:unless>
+
+      <!-- Isaac Sim bridge: reads /joint_states, writes /joint_command -->
+      <xacro:if value="${hardware_backend == 'isaac'}">
+        <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
+        <param name="joint_commands_topic">/joint_command</param>
+        <param name="joint_states_topic">/joint_states</param>
+        <param name="trigger_joint_command_threshold">0.0</param>
+        <param name="sum_wrapped_joint_states">false</param>
+      </xacro:if>
+
+    </hardware>
+
+    <!-- ===================================================== -->
+    <!-- UR5e ARM JOINTS                                       -->
+    <!-- ===================================================== -->
+
+    <joint name="shoulder_pan_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+    <joint name="shoulder_lift_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">-1.4232</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+    <joint name="elbow_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">-1.99</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+    <joint name="wrist_1_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">3.3672</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+    <joint name="wrist_2_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">-1.56</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+    <joint name="wrist_3_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">3.141592</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+    <!-- ===================================================== -->
+    <!-- HAND JOINTS                                           -->
+    <!-- ===================================================== -->
+
+    <joint name="${prefix_p}wrist_yaw_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+    <joint name="${prefix_p}hand_base_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+    <joint name="${prefix_p}thumb_1_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+    <joint name="${prefix_p}thumb_2_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+    <joint name="${prefix_p}index_1_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+    <joint name="${prefix_p}middle_1_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+    <joint name="${prefix_p}ring_1_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+    <joint name="${prefix_p}little_1_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"><param name="initial_value">0.0</param></state_interface>
+    </joint>
+
+  </ros2_control>
+
+</robot>

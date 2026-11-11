@@ -1,0 +1,31 @@
+# ==========================================================
+# Pilz Industrial Motion Planner Configuration
+# ==========================================================
+
+pilz_industrial_motion_planner:
+
+  # Planner plugin:
+  # - Uses Pilz command-based planner (PTP, LIN, CIRC)
+  # - Deterministic, industrial-style motion execution
+  planning_plugin: pilz_industrial_motion_planner/CommandPlanner
+
+
+  # ==========================================================
+  # Request Adapters (pre-processing)
+  # ==========================================================
+  # Same validation pipeline as OMPL → ensures safe inputs
+  request_adapters:
+    - default_planning_request_adapters/ResolveConstraintFrames   # normalize constraint frames
+    - default_planning_request_adapters/ValidateWorkspaceBounds   # ensure target is reachable
+    - default_planning_request_adapters/CheckStartStateBounds     # joint limits check
+    - default_planning_request_adapters/CheckStartStateCollision  # avoid starting in collision
+
+
+  # ==========================================================
+  # Response Adapters (post-processing)
+  # ==========================================================
+  # Same post-processing as OMPL
+  response_adapters:
+    - default_planning_response_adapters/AddTimeOptimalParameterization  # adds velocity profile
+    - default_planning_response_adapters/ValidateSolution               # final safety validation
+    - default_planning_response_adapters/DisplayMotionPath              # visualization in RViz

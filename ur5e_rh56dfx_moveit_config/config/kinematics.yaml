@@ -1,0 +1,24 @@
+# =========================================================
+# Kinematics configuration for the robot planning groups
+# =========================================================
+#
+# This file defines which inverse kinematics solver MoveIt
+# should use for each planning group defined in the SRDF.
+#
+# Planning groups in this system:
+#   • arm  → UR5e 6-DOF manipulator
+#   • hand → Inspire RH56DFX dexterous hand
+#
+# Only the arm requires inverse kinematics because its
+# motion is defined in Cartesian space. The hand joints
+# are controlled directly, so no IK solver is required.
+
+arm:
+  # Numerical inverse kinematics solver provided by KDL
+  kinematics_solver: kdl_kinematics_plugin/KDLKinematicsPlugin
+
+  # Resolution used when sampling joint space
+  kinematics_solver_search_resolution: 0.005
+
+  # Maximum time allowed to search for an IK solution
+  kinematics_solver_timeout: 0.05
