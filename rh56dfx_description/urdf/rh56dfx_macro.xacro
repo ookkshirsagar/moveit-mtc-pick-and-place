@@ -1,0 +1,3331 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:macro name="rh56dfx_hand" params="side prefix">
+
+  <!--
+  ======================================================================
+  INSPIRE HAND RH56DFX - PARAMETRIC MACRO
+  ======================================================================
+  -->
+
+  <!-- ============================================================= -->
+  <!-- MESH ROOT DIRECTORY                                           -->
+  <!-- ============================================================= -->
+
+  <xacro:property name="mesh_root"
+    value="package://rh56dfx_description/meshes/${side}"/>
+
+  <xacro:property name="mesh_visual"
+    value="${mesh_root}/visual"/>
+
+  <xacro:property name="mesh_collision"
+    value="${mesh_root}/collision"/>
+
+  <!-- ============================================================= -->
+  <!-- ROOT LINK (KINEMATIC ANCHOR)                                  -->
+  <!-- ============================================================= -->
+
+    <link name="${prefix}hand_root"/>
+
+    <joint name="${prefix}hand_root_joint" type="fixed">
+      <parent link="${prefix}hand_root"/>
+      <child link="${prefix}wrist_base_link"/>
+    </joint>
+
+  <!-- ============================================================= -->
+  <!--     WRIST BASE LINK                                           -->
+  <!-- ============================================================= -->
+  
+
+  <link name="${prefix}wrist_base_link">
+
+    <!-- ================= INERTIAL ================= -->
+
+    <inertial>
+      <origin
+        xyz="0.00191998775838077 -2.17534676938413E-08 0.0332314674517473"
+        rpy="0 0 0" />
+      <mass
+        value="0.0695038666375085" />
+      <inertia
+        ixx="3.02480603452712E-05"
+        ixy="-6.93925958512878E-11"
+        ixz="5.01503749466725E-07"
+        iyy="3.10214964795132E-05"
+        iyz="-1.99074603834946E-11"
+        izz="2.86515789056302E-05" />
+    </inertial>
+
+
+    <!-- ================= VISUAL ================= -->
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}wrist_base_link.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}wrist_base_link.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ========================================================= -->
+  <!-- Wrist yaw joint                                          -->
+  <!-- ========================================================= -->
+
+
+  <link name="${prefix}wrist_yaw">
+
+    <!-- ================= INERTIAL ================= -->
+
+    <!-- Left Hand Inertial -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin
+          xyz="2.01072214434106E-11 0.00545897802039832 -0.0131919975376266"
+          rpy="0 0 0" />
+        <mass
+          value="0.00277890553366271" />
+        <inertia
+          ixx="2.26417227467369E-07"
+          ixy="8.61095341004759E-17"
+          ixz="-2.38081373178298E-16"
+          iyy="1.49079741679729E-07"
+          iyz="-1.48845836759757E-08"
+          izz="1.09370482342779E-07" />
+      </inertial>
+    </xacro:if>
+
+    <!-- Right Hand Inertial -->
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin
+          xyz="3.75516494205945E-11 0.00545897820466844 0.0131919971923186"
+          rpy="0 0 0" />
+        <mass
+          value="2.7789055337E-03" />
+        <inertia
+          ixx="2.2641722747E-07"
+          ixy="-8.6109534100E-17"
+          ixz="2.3808137318E-16"
+          iyy="1.4907974168E-07"
+          iyz="1.4884583676E-08"
+          izz="1.0937048234E-07" />
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}wrist_yaw.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}wrist_yaw.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <joint
+    name="${prefix}wrist_yaw_joint"
+    type="revolute">
+
+    <!-- ================= ORIGIN ================= -->
+
+    <!-- Left -->
+    <xacro:if value="${side == 'left'}">
+      <origin
+        xyz="-0.0055 0 0.0785"
+        rpy="1.5708 0 -1.5708" />
+    </xacro:if>
+
+    <!-- Right -->
+    <xacro:if value="${side == 'right'}">
+      <origin
+        xyz="-0.0055 0 0.0785"
+        rpy="1.5708 0 1.5708" />
+    </xacro:if>
+
+    <parent link="${prefix}wrist_base_link" />
+    <child  link="${prefix}wrist_yaw" />
+
+    <axis xyz="0 0 -1" />
+
+    <!-- ================= LIMITS ================= -->
+
+    <limit
+      lower="-0.445"
+      upper="0.445"
+      effort="10"
+      velocity="2" />
+
+  </joint>
+
+
+
+  <!-- ========================================================= -->
+  <!-- Hand base (palm carrier)                                  -->
+  <!-- ========================================================= -->
+
+
+  <link name="${prefix}hand_base">
+
+    <!-- ================= INERTIAL ================= -->
+
+    <!-- Left -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin
+          xyz="-0.00203701184983107 0.0326112668966462 -0.0155668752323911"
+          rpy="0 0 0" />
+        <mass value="0.175357386592075" />
+        <inertia
+          ixx="0.000121544991663851"
+          ixy="-6.56650332338833E-07"
+          ixz="5.20578126071962E-07"
+          iyy="7.52780099608673E-05"
+          iyz="4.53525030951461E-07"
+          izz="7.95760415441486E-05" />
+      </inertial>
+    </xacro:if>
+
+    <!-- Right -->
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin
+          xyz="0.00186701184983107 0.0342512668966462 0.0144068752323911"
+          rpy="0 0 0" />
+        <mass value="1.7535738659E-01" />
+        <inertia
+          ixx="1.2154499166E-04"
+          ixy="6.5665033234E-07"
+          ixz="-5.2057812607E-07"
+          iyy="7.5278009961E-05"
+          iyz="4.5352503095E-07"
+          izz="7.9576041544E-05" />
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}hand_base.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}hand_base.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <joint
+    name="${prefix}hand_base_joint"
+    type="revolute">
+
+    <!-- ================= ORIGIN ================= -->
+
+    <!-- Left -->
+    <xacro:if value="${side == 'left'}">
+      <origin
+        xyz="0.015 0 -0.0055"
+        rpy="-0.11587 1.5708 -0.11587" />
+    </xacro:if>
+
+    <!-- Right -->
+    <xacro:if value="${side == 'right'}">
+      <origin
+        xyz="-0.015 0 0.0055"
+        rpy="3.1414 1.5708 3.1414" />
+    </xacro:if>
+
+    <parent link="${prefix}wrist_yaw"/>
+    <child  link="${prefix}hand_base"/>
+
+    <axis xyz="0 0 -1"/>
+
+    <!-- ================= LIMITS ================= -->
+
+    <limit
+      lower="-0.3955"
+      upper="0.386"
+      effort="10"
+      velocity="2"/>
+
+  </joint>
+
+
+
+  <!-- ========================================================= -->
+  <!-- Fingers: thumb, index, middle, ring, little               -->
+  <!-- ========================================================= -->
+  <!--
+    Mimic joints:
+      - Used to reduce control dimensionality
+      - Required for realistic finger curling
+  -->
+
+  <!-- THUMB -->
+  <!-- right_thumb_1, right_thumb_2, ... -->
+  <!-- index finger -->
+  <!-- middle finger -->
+  <!-- ring finger -->
+  <!-- little finger -->
+
+  <!-- ============================================================= -->
+  <!-- THUMB 1                                                       -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}thumb_1">
+
+    <!-- ================= INERTIAL ================= -->
+
+    <!-- Left -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin
+          xyz="0.000675346448543043 -0.00433551697891765 -0.00508780193489455"
+          rpy="0 0 0" />
+        <mass value="0.0048541771537782" />
+        <inertia
+          ixx="1.96094051160198E-07"
+          ixy="3.4858314687744E-08"
+          ixz="-3.39249138133518E-09"
+          iyy="1.43278984955152E-07"
+          iyz="8.1983806766273E-09"
+          izz="1.68938152839344E-07" />
+      </inertial>
+    </xacro:if>
+
+    <!-- Right -->
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin
+          xyz="0.000675361243917746 0.00433554414064959 -0.00508779581139575"
+          rpy="0 0 0" />
+        <mass value="4.8541771538E-03" />
+        <inertia
+          ixx="1.9609405116E-07"
+          ixy="-3.4858314688E-08"
+          ixz="-3.3924913813E-09"
+          iyy="1.4327898496E-07"
+          iyz="-8.1983806766E-09"
+          izz="1.6893815284E-07" />
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}thumb_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}thumb_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <joint
+    name="${prefix}thumb_1_joint"
+    type="revolute">
+
+    <!-- ================= ORIGIN ================= -->
+
+    <!-- Left -->
+    <xacro:if value="${side == 'left'}">
+      <origin
+        xyz="0.0150000040088096 0.0342999999998856 0.00640000024786605"
+        rpy="-1.5707963267949 0 0" />
+    </xacro:if>
+
+    <!-- Right -->
+    <xacro:if value="${side == 'right'}">
+      <origin
+        xyz="-0.0153000040088447 0.0343000000007003 0.036400000219911"
+        rpy="1.5707963267949 0 -3.14159265358979" />
+    </xacro:if>
+
+    <parent link="${prefix}hand_base"/>
+    <child  link="${prefix}thumb_1"/>
+
+     <xacro:if value="${side == 'left'}">
+      <axis xyz="0 0 1"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <axis xyz="0 0 -1"/>
+    </xacro:if>
+
+    <!-- ================= LIMITS ================= -->
+
+    <limit
+      lower="0"
+      upper="1.310384"
+      effort="10"
+      velocity="2"/>
+
+  </joint>
+
+  <!-- ============================================================= -->
+  <!-- THUMB 2.                                                      -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}thumb_2">
+
+    <!-- ================= INERTIAL ================= -->
+
+    <!-- Left -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin
+          xyz="0.0217021678253 0.0140075970723664 0.00802372797249204"
+          rpy="0 0 0" />
+        <mass value="0.011197324578883" />
+        <inertia
+          ixx="1.69781612625836E-06"
+          ixy="-7.99167330982163E-07"
+          ixz="6.95615513975465E-10"
+          iyy="1.86857468329596E-06"
+          iyz="-2.37438335268391E-10"
+          izz="3.3501396961086E-06" />
+      </inertial>
+    </xacro:if>
+
+    <!-- Right -->
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin
+          xyz="-0.021702059702569 0.0140073366357873 0.00802385604823092"
+          rpy="0 0 0" />
+        <mass value="1.1197324579E-02" />
+        <inertia
+          ixx="1.6978161263E-06"
+          ixy="7.9916733098E-07"
+          ixz="-6.9561551398E-10"
+          iyy="1.8685746833E-06"
+          iyz="-2.3743833527E-10"
+          izz="3.3501396961E-06" />
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}thumb_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}thumb_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <joint
+    name="${prefix}thumb_2_joint"
+    type="revolute">
+
+    <!-- ================= ORIGIN ================= -->
+
+    <!-- Left -->
+    <xacro:if value="${side == 'left'}">
+      <origin
+        xyz="0.0107038256289916 -0.00903759464150408 -0.00649999999999991"
+        rpy="1.5707963267949 0 -1.30899693899575" />
+    </xacro:if>
+
+    <!-- Right -->
+    <xacro:if value="${side == 'right'}">
+      <origin
+        xyz="0.0107038256289915 0.00903759464150421 -0.00649999999999998"
+        rpy="1.5707963267949 0 -1.83259571459404" />
+    </xacro:if>
+
+    <xacro:if value="${side == 'left'}">
+      <axis xyz="0 0 1"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <axis xyz="0 0 -1"/>
+    </xacro:if>
+
+
+    <parent link="${prefix}thumb_1"/>
+    <child  link="${prefix}thumb_2"/>
+
+    <limit
+      lower="0"
+      upper="0.523477"
+      effort="10"
+      velocity="2"/>
+
+  </joint>
+
+
+  <!-- ============================================================= -->
+  <!-- THUMB RUBBER 1                                                -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}thumb_rubber_1">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="5.40162647625353E-05 0.00265236291170259 -0.00524128392726222"
+                rpy="0 0 0"/>
+        <mass value="0.0014906283411173"/>
+        <inertia
+          ixx="1.88752644928606E-07"
+          ixy="-3.80267550036779E-11"
+          ixz="-3.87652846240887E-10"
+          iyy="1.0000000000E-07"
+          iyz="3.72404130676968E-09"
+          izz="2.26622483357037E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="5.25123796278198E-05 -0.00265158184532596 -0.00524156527611314"
+                rpy="0 0 0"/>
+        <mass value="1.4906283411E-03"/>
+        <inertia
+          ixx="1.8875264493E-07"
+          ixy="3.8026755004E-11"
+          ixz="-3.8765284624E-10"
+          iyy="1.0000000000E-07"
+          iyz="-3.7240413068E-09"
+          izz="2.2662248336E-07"/>
+      </inertial>
+    </xacro:if>
+    <!-- ============================================================ -->
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}thumb_rubber_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}thumb_rubber_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}thumb_rubber_1_joint" type="fixed">
+
+    <xacro:if value="${side == 'left'}">
+      <origin
+        xyz="0.013046553810162 0.0313855611442985 0.00799913310995912"
+        rpy="3.13815940276581 1.56040994467678 -0.950106044051694"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin
+        xyz="-0.013046553810162 0.0313855611442986 0.00799913310995912"
+        rpy="-3.13815940276514 1.56040994467676 -2.19148660953744"/>
+    </xacro:if>
+
+    <parent link="${prefix}thumb_2"/>
+    <child  link="${prefix}thumb_rubber_1"/>
+
+  </joint>
+
+  <!-- ============================================================= -->
+  <!-- THUMB 3                                                       -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}thumb_3">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin
+          xyz="0.009163924940713 -0.00021374698947753 0.00749980580117909"
+          rpy="0 0 0"/>
+        <mass value="0.00226949921461618"/>
+        <inertia
+          ixx="2.51533206255898E-07"
+          ixy="-6.42880570532076E-08"
+          ixz="-1.61781119018821E-12"
+          iyy="1.99322726365665E-07"
+          iyz="-2.2825448825002E-12"
+          izz="2.99631274061669E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin
+          xyz="-0.00916388835013904 -0.000213690008193602 0.00750028797357696"
+          rpy="0 0 0"/>
+        <mass value="2.2694992146E-03"/>
+        <inertia
+          ixx="2.5153320626E-07"
+          ixy="6.4288057053E-08"
+          ixz="-1.6178111902E-12"
+          iyy="1.9932272637E-07"
+          iyz="2.2825448825E-12"
+          izz="2.9963127406E-07"/>
+      </inertial>
+    </xacro:if>
+    <!-- ============================================================ -->
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}thumb_3.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}thumb_3.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}thumb_3_joint" type="revolute">
+
+    <!-- Side dependent joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin
+        xyz="0.0415838804016113 0.0375080548719081 0.000500000000000139"
+        rpy="0 0 0"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin
+        xyz="-0.0415838804016112 0.0375080548719081 0.00050000000000007"
+        rpy="0 0 0"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'left'}">
+      <axis xyz="0 0 1"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <axis xyz="0 0 -1"/>
+    </xacro:if>
+
+    <parent link="${prefix}thumb_2"/>
+    <child  link="${prefix}thumb_3"/>
+
+    
+
+    <limit
+      lower="0"
+      upper="0.606844"
+      effort="10"
+      velocity="2"/>
+
+    <!-- Mimic remains identical for both sides -->
+    <mimic
+      joint="${prefix}thumb_2_joint"
+      multiplier="1.1425"
+      offset="0"/>
+
+  </joint>
+
+  <!-- ============================================================= -->
+  <!-- THUMB RUBBER 2                                                -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}thumb_rubber_2">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="0.000162364162411777 -0.00288606836963476 -0.00905408809199784"
+                rpy="0 0 0"/>
+        <mass value="0.000712407867806307"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="1.57348854903248E-10"
+          ixz="1.3517068967957E-10"
+          iyy="1.0000000000E-07"
+          iyz="-8.47497937683654E-09"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="0.000157140889199783 0.00288556596888331 -0.0090540619335797"
+                rpy="0 0 0"/>
+        <mass value="7.1240786781E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-1.5734885490E-10"
+          ixz="1.3517068968E-10"
+          iyy="1.0000000000E-07"
+          iyz="8.4749793768E-09"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}thumb_rubber_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}thumb_rubber_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+   
+  <joint name="${prefix}thumb_rubber_2_joint" type="fixed">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.00507003292533287 0.0118736037354008 0.00749998784521017"
+              rpy="3.1415926439814 1.5531258063565 -1.04754422345685"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="-0.00507003292533311 0.0118736037354007 0.00749998784521028"
+              rpy="-3.14159264398177 1.55312580635649 -2.09404843013331"/>
+    </xacro:if>
+
+    <parent link="${prefix}thumb_3"/>
+    <child link="${prefix}thumb_rubber_2"/>
+
+  </joint>
+
+
+  <!-- ============================================================= -->
+  <!-- THUMB 4                                                       -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}thumb_4">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="0.00556381842605758 0.00321786565136162 0.00598762078210302"
+                rpy="0 0 0"/>
+        <mass value="0.000889838221404847"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-1.6746511102932E-08"
+          ixz="-3.94753258813797E-11"
+          iyy="1.0000000000E-07"
+          iyz="-9.78353772270228E-11"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="-0.00556381960339052 0.00321786469032558 0.00598762142813954"
+                rpy="0 0 0"/>
+        <mass value="8.8983822140E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="1.6746511103E-08"
+          ixz="3.9475325881E-11"
+          iyy="1.0000000000E-07"
+          iyz="9.7835377227E-11"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}thumb_4.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}thumb_4.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}thumb_4_joint" type="revolute">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.0183934390204584 0.0132218952161126 0.0015"
+              rpy="0 0 0"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="-0.018393 0.013222 0.0015"
+              rpy="0 0 0"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'left'}">
+      <axis xyz="0 0 1"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <axis xyz="0 0 -1"/>
+    </xacro:if>
+
+    <parent link="${prefix}thumb_3"/>
+    <child link="${prefix}thumb_4"/>
+
+    <limit
+      lower="0"
+      upper="0.430866"
+      effort="10"
+      velocity="2"/>
+
+    <mimic 
+      joint="${prefix}thumb_2_joint"
+      multiplier="0.85796"
+      offset="0"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- THUMB RUBBER 3                                                -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}thumb_rubber_3">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="0.000268126145379105 -0.00224962169943535 -0.00745388764640809"
+                rpy="0 0 0"/>
+        <mass value="0.00232428792968957"/>
+        <inertia
+          ixx="1.17389753346854E-07"
+          ixy="-2.01766145271162E-10"
+          ixz="-5.32341724071167E-12"
+          iyy="1.0000000000E-07"
+          iyz="5.60795555686444E-09"
+          izz="1.17533665402913E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="0.000133677754111619 0.00249789544313434 -0.00737807315210834"
+                rpy="0 0 0"/>
+        <mass value="2.3242879297E-03"/>
+        <inertia
+          ixx="1.1738975335E-07"
+          ixy="2.0176614527E-10"
+          ixz="5.3234172407E-12"
+          iyy="1.0000000000E-07"
+          iyz="-5.6079555569E-09"
+          izz="1.1753366540E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}thumb_rubber_3.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}thumb_rubber_3.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}thumb_rubber_3_joint" type="fixed">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.00161799622019054 0.00970901340884194 0.00599999825111228"
+              rpy="3.1415305070896 1.53480155127221 -0.558130435251912"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="-0.001618 0.009709 0.006"
+              rpy="-3.1415 1.5526 -2.5499"/>
+    </xacro:if>
+
+    <parent link="${prefix}thumb_4"/>
+    <child link="${prefix}thumb_rubber_3"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- THUMB PAD                                                     -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}thumb_pad">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="-3.37221102708618E-08 0.00163135155510158 -0.00128514999690038"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="4.70832523460883E-16"
+          ixz="1.49104319677674E-15"
+          iyy="1.0000000000E-07"
+          iyz="-2.69646775933513E-12"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="-3.17863613624736E-08 -0.00152836456065816 -0.0014060654960278"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-4.7083252346E-16"
+          ixz="1.4910431968E-15"
+          iyy="1.0000000000E-07"
+          iyz="-2.6964677593E-12"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}thumb_pad.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}thumb_pad.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}thumb_pad_joint" type="fixed">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="4.85806106777231E-05 -0.00783602820251542 -0.00134991116931751"
+              rpy="0.280050125889912 -0.0359912824278135 -1.43908628784779E-05"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="1.97306155155508E-05 0.00787683873056354 -0.00108764909180575"
+              rpy="-0.32308105919377 -0.0181645215163438 1.44824432616579E-05"/>
+    </xacro:if>
+
+    <parent link="${prefix}thumb_rubber_3"/>
+    <child link="${prefix}thumb_pad"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- THUMB TIP                                                     -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}thumb_tip">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="2.50035524579084E-05 -0.00144636222857047 -0.00180325426020556"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="4.05362271422041E-13"
+          ixz="-3.71282029267747E-13"
+          iyy="1.0000000000E-07"
+          iyz="-2.89649540571285E-11"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="-2.47505902372935E-05 0.00144636195662112 -0.00180325741638071"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="4.0536227142E-13"
+          ixz="3.7128202927E-13"
+          iyy="1.0000000000E-07"
+          iyz="2.8964954057E-11"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}thumb_tip.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}thumb_tip.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}thumb_tip_joint" type="fixed">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.000289440688743703 -0.0147768013355046 -0.0080365466825163"
+              rpy="1.37938246389059 -0.0332499608948743 0.0135335445391149"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.000137071096497604 0.0150376112085459 -0.00754156328997224"
+              rpy="-1.34664653486349 -0.0211118546108423 0.0134662732683287"/>
+    </xacro:if>
+
+    <parent link="${prefix}thumb_rubber_3"/>
+    <child link="${prefix}thumb_tip"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- INDEX 1                                                       -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}index_1">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="0.000461541435807844 0.0116515999092932 -0.00590003371767814"
+                rpy="0 0 0"/>
+        <mass value="0.00313593515786095"/>
+        <inertia
+          ixx="4.99043606656405E-07"
+          ixy="-3.95128282410646E-08"
+          ixz="-5.34437774032156E-14"
+          iyy="1.54311839890674E-07"
+          iyz="-6.71702540608781E-12"
+          izz="5.22966345973091E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="0.000461509522881251 0.0116512167073588 0.00590005205650069"
+                rpy="0 0 0"/>
+        <mass value="3.1359351579E-03"/>
+        <inertia
+          ixx="4.9904360666E-07"
+          ixy="-3.9512828241E-08"
+          ixz="-5.3443777403E-14"
+          iyy="1.5431183989E-07"
+          iyz="-6.7170254061E-12"
+          izz="5.2296634597E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}index_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}index_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}index_1_joint" type="revolute">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="-0.0022453 0.10413 0.018118"
+              rpy="0.034907 0 0"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.00194532821464022 0.10413 0.048117784"
+              rpy="-3.14159265358979 0 3.14159265358979"/>
+    </xacro:if>
+
+    <parent link="${prefix}hand_base"/>
+    <child link="${prefix}index_1"/>
+
+    <axis xyz="0 0 -1"/>
+
+    <limit lower="0"
+           upper="1.344277"
+           effort="10"
+           velocity="2"/>
+
+  </joint>
+
+
+  <!-- ============================================================= -->
+  <!-- INDEX RUBBER 1                                                -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}index_rubber_1">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="4.68281528998027E-07 -0.000277302976287988 -0.00810702727213528"
+                rpy="0 0 0"/>
+        <mass value="0.00100751033943594"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="1.84022397141766E-12"
+          ixz="1.13723901975888E-12"
+          iyy="1.0000000000E-07"
+          iyz="-1.10134790876878E-08"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="4.12805956806483E-07 -0.000277556595871697 -0.00810725944560028"
+                rpy="0 0 0"/>
+        <mass value="1.0075103394E-03"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-1.8402239714E-12"
+          ixz="1.1372390198E-12"
+          iyy="1.0000000000E-07"
+          iyz="-1.1013479088E-08"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}index_rubber_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}index_rubber_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}index_rubber_1_joint" type="fixed">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.01096212818371 0.0154754543575723 -0.00589908996829794"
+              rpy="-1.63727241823797 1.57076102968367 -1.57079632684175"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.010962 0.015475 0.0058991"
+              rpy="1.5043 1.5708 1.5708"/>
+    </xacro:if>
+
+    <parent link="${prefix}index_1"/>
+    <child link="${prefix}index_rubber_1"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- INDEX 2                                                       -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}index_2">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="0.000846459676133171 0.0159699536063371 -0.00510110719069301"
+                rpy="0 0 0"/>
+        <mass value="0.00329259625036443"/>
+        <inertia
+          ixx="2.85619906326361E-07"
+          ixy="-9.65833645685913E-08"
+          ixz="1.13183640639823E-11"
+          iyy="1.0000000000E-07"
+          iyz="2.1481028900634E-11"
+          izz="3.31433102179914E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="0.000846426534759137 0.0159697001083362 0.00510099034129251"
+                rpy="0 0 0"/>
+        <mass value="3.2925962504E-03"/>
+        <inertia
+          ixx="2.8561990633E-07"
+          ixy="-9.6583364569E-08"
+          ixz="-1.1318364064E-11"
+          iyy="1.0000000000E-07"
+          iyz="-2.1481028901E-11"
+          izz="3.3143310218E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}index_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}index_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}index_2_joint" type="revolute">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.00711888977031654 0.031333910351405 -0.000800000000000023"
+              rpy="0 0 0"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.0071189 0.031334 0.0008"
+              rpy="0 0 0"/>
+    </xacro:if>
+
+    <parent link="${prefix}index_1"/>
+    <child link="${prefix}index_2"/>
+
+    <axis xyz="0 0 -1"/>
+
+    <limit lower="-0.15"
+           upper="1.59562"
+           effort="10"
+           velocity="2"/>
+
+    <!-- Mimic behaviour -->
+    <mimic joint="${prefix}index_1_joint"
+           multiplier="1.1169"
+           offset="-0.15"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- INDEX RUBBER 2                                                -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}index_rubber_2">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="3.71014377972823E-06 0.0158540066839677 -0.000683115137425944"
+                rpy="0 0 0"/>
+        <mass value="0.00119004560800986"/>
+        <inertia
+          ixx="1.35899798757468E-07"
+          ixy="8.50258176038257E-11"
+          ixz="-8.30283954597412E-12"
+          iyy="1.0000000000E-07"
+          iyz="-1.59661991933365E-08"
+          izz="1.37431891967755E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="-3.58356273424953E-06 0.0158538079871463 -0.000683080888343193"
+                rpy="0 0 0"/>
+        <mass value="1.1900456080E-03"/>
+        <inertia
+          ixx="1.3589979876E-07"
+          ixy="-8.5025817604E-11"
+          ixz="8.3028395460E-12"
+          iyy="1.0000000000E-07"
+          iyz="-1.5966199193E-08"
+          izz="1.3743189197E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}index_rubber_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}index_rubber_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}index_rubber_2_joint" type="fixed">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.00701471041712752 0.0124857131697119 -0.00505570909095784"
+              rpy="-1.45082090935432 1.56380581495719 -1.57079632679513"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.0070147 0.012486 0.0050557"
+              rpy="1.6908 1.5638 1.5708"/>
+    </xacro:if>
+
+    <parent link="${prefix}index_2"/>
+    <child link="${prefix}index_rubber_2"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- INDEX PAD                                                     -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}index_pad">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="4.72282110058897E-06 -0.00107358686744947 -0.000867315001026159"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="8.97449012100187E-15"
+          ixz="-1.07077919025427E-13"
+          iyy="1.0000000000E-07"
+          iyz="-1.72170853830108E-12"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="-4.72675732283989E-06 -0.00107358726165793 -0.000867322927155814"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-8.9744901210E-15"
+          ixz="1.0707791903E-13"
+          iyy="1.0000000000E-07"
+          iyz="-1.7217085383E-12"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}index_pad.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}index_pad.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}index_pad_joint" type="fixed">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="-3.002438161398E-05 0.0237882080122745 0.00562165601405612"
+              rpy="0.0696904105640626 4.36438131661698E-05 0.00036202589968291"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="3.00243817556722E-05 0.0237882080122733 0.00562165601406409"
+              rpy="0.0696904105640824 -4.36438134320539E-05 -0.000362025901862688"/>
+    </xacro:if>
+
+    <parent link="${prefix}index_rubber_2"/>
+    <child link="${prefix}index_pad"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- INDEX TIP                                                     -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}index_tip">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="-0.000856665300146248 1.89922067794779E-08 -0.00102183808192999"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-3.18365589820352E-16"
+          ixz="-2.20292569548207E-12"
+          iyy="1.0000000000E-07"
+          iyz="-2.29614533759655E-16"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="-0.000856665440566062 1.72386023511439E-08 -0.00102183804462784"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-3.1836558982E-16"
+          ixz="-2.2029256955E-12"
+          iyy="1.0000000000E-07"
+          iyz="-2.2961453376E-16"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}index_tip.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}index_tip.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}index_tip_joint" type="fixed">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="-1.30217165712487E-05 0.0312210274719897 0.00245735122592225"
+              rpy="0.013257848934878 -1.15442763241895 -1.58292646914228"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="1.3021716642192E-05 0.0312210274719888 0.00245735122593096"
+              rpy="-0.0132578490113875 -1.15442763241846 -1.55866618437752"/>
+    </xacro:if>
+
+    <parent link="${prefix}index_rubber_2"/>
+    <child link="${prefix}index_tip"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- MIDDLE 1                                                      -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}middle_1">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="0.000461541629692849 0.0116515965600667 -0.00590004767005842"
+                rpy="0 0 0"/>
+        <mass value="0.00313593954054027"/>
+        <inertia
+          ixx="4.99044430806054E-07"
+          ixy="-3.95130872023826E-08"
+          ixz="1.02137723004895E-13"
+          iyy="1.54311900293301E-07"
+          iyz="-7.36565083300995E-12"
+          izz="5.22966692169053E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="0.000461536885984493 0.0116516125222251 0.00589995181961714"
+                rpy="0 0 0"/>
+        <mass value="3.1359395405E-03"/>
+        <inertia
+          ixx="4.9904443081E-07"
+          ixy="-3.9513087202E-08"
+          ixz="1.0213772300E-13"
+          iyy="1.5431190029E-07"
+          iyz="-7.3656508330E-12"
+          izz="5.2296669217E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}middle_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}middle_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}middle_1_joint" type="revolute">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="-0.0022453300191158 0.104699999999839 -0.00119999813570634"
+              rpy="0 0 0"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.00224533001909609 0.104700000000653 0.0288000018363736"
+              rpy="3.14159265358979 0 3.1415926535899"/>
+    </xacro:if>
+
+    <parent link="${prefix}hand_base"/>
+    <child link="${prefix}middle_1"/>
+
+    <axis xyz="0 0 -1"/>
+    <limit lower="0"
+           upper="1.344277"
+           effort="10"
+           velocity="2"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- MIDDLE RUBBER 1                                               -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}middle_rubber_1">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="3.76241556104828E-07 -0.000277324378074262 -0.00810714899583698"
+                rpy="0 0 0"/>
+        <mass value="0.00100751536770388"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="1.33554991989653E-12"
+          ixz="1.04281442852275E-12"
+          iyy="1.0000000000E-07"
+          iyz="-1.1014346875694E-08"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="5.03351059822493E-07 -0.000277151585263605 -0.00810672582334755"
+                rpy="0 0 0"/>
+        <mass value="1.0075153677E-03"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-1.3355499199E-12"
+          ixz="1.0428144285E-12"
+          iyy="1.0000000000E-07"
+          iyz="-1.1014346876E-08"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}middle_rubber_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}middle_rubber_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}middle_rubber_1_joint" type="fixed">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.0109621183300829 0.015475307190652 -0.00589999770412566"
+              rpy="-1.63727058353844 1.57079545855447 -1.57079632713678"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.010962 0.015475 0.0059"
+              rpy="1.5043 1.5708 1.5708"/>
+    </xacro:if>
+
+    <parent link="${prefix}middle_1"/>
+    <child link="${prefix}middle_rubber_1"/>
+
+  </joint>
+
+
+  <!-- ============================================================= -->
+  <!-- MIDDLE 2                                                      -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}middle_2">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="0.00141025127204812 0.0172293351814034 -0.0051009418470411"
+                rpy="0 0 0"/>
+        <mass value="0.0035765616038148"/>
+        <inertia
+          ixx="3.58365701195062E-07"
+          ixy="-1.25788486768389E-07"
+          ixz="1.42327506668955E-11"
+          iyy="1.11145569773567E-07"
+          iyz="3.3915002379162E-11"
+          izz="4.17351432280297E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="0.00141024346448289 0.0172292690724932 0.00510100142947595"
+                rpy="0 0 0"/>
+        <mass value="3.5765616038E-03"/>
+        <inertia
+          ixx="3.5836570120E-07"
+          ixy="-1.2578848677E-07"
+          ixz="-1.4232750667E-11"
+          iyy="1.1114556977E-07"
+          iyz="-3.3915002379E-11"
+          izz="4.1735143228E-07"/>
+      </inertial>
+    </xacro:if>
+
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}middle_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}middle_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}middle_2_joint" type="revolute">
+
+    <!-- Left joint origin -->
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.00711888977031674 0.031333910351405 -0.000800000000000023"
+              rpy="0 0 0"/>
+    </xacro:if>
+
+    <!-- Right joint origin -->
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.0071189 0.031334 0.0008"
+              rpy="0 0 0"/>
+    </xacro:if>
+
+    <parent link="${prefix}middle_1"/>
+    <child link="${prefix}middle_2"/>
+
+    <axis xyz="0 0 -1"/>
+
+    <limit lower="-0.15"
+           upper="1.59562"
+           effort="10"
+           velocity="2"/>
+
+    <mimic joint="${prefix}middle_1_joint"
+           multiplier="1.1169"
+           offset="-0.15"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- MIDDLE RUBBER 2                                               -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}middle_rubber_2">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="7.72801084888974E-06 0.0179695904606754 -0.000804044743343377"
+                rpy="0 0 0"/>
+        <mass value="0.00130495514940863"/>
+        <inertia
+          ixx="1.76870136972793E-07"
+          ixy="1.74860270573956E-10"
+          ixz="-1.83492951193746E-11"
+          iyy="1.0000000000E-07"
+          iyz="-1.81404682177571E-08"
+          izz="1.7876054155983E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="-7.78660795392946E-06 0.0179695960463814 -0.000804223911115579"
+                rpy="0 0 0"/>
+        <mass value="1.3049551494E-03"/>
+        <inertia
+          ixx="1.7687013697E-07"
+          ixy="-1.7486027057E-10"
+          ixz="1.8349295119E-11"
+          iyy="1.0000000000E-07"
+          iyz="-1.8140468218E-08"
+          izz="1.7876054156E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}middle_rubber_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}middle_rubber_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}middle_rubber_2_joint" type="fixed">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.00728447582116709 0.0125178675599533 -0.00500175021689153"
+              rpy="-1.42206062046314 1.56574950814948 -1.57079632679496"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.0072845 0.012518 0.0050018"
+              rpy="1.7195 1.5657 1.5708"/>
+    </xacro:if>
+
+    <parent link="${prefix}middle_2"/>
+    <child link="${prefix}middle_rubber_2"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- MIDDLE PAD                                                    -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}middle_pad">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="9.151649575323E-06 -0.000840645806262336 -0.000949482426872789"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="2.77833025016142E-15"
+          ixz="-1.92244046682768E-13"
+          iyy="1.0000000000E-07"
+          iyz="-2.90926190882175E-13"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="-9.14565195887437E-06 -0.000840646466128969 -0.000949483924762157"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-2.7783302502E-15"
+          ixz="1.9224404668E-13"
+          iyy="1.0000000000E-07"
+          iyz="-2.9092619088E-13"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}middle_pad.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}middle_pad.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}middle_pad_joint" type="fixed">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="-5.25438080143659E-05 0.0275018148385151 0.0054598171522955"
+              rpy="-0.00517966246509127 0 -5.23567776815961E-05"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="5.25438080711468E-05 0.0275018148385101 0.00545981715229053"
+              rpy="-0.00517966246514453 0 5.23567777294042E-05"/>
+    </xacro:if>
+
+    <parent link="${prefix}middle_rubber_2"/>
+    <child link="${prefix}middle_pad"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- MIDDLE TIP                                                    -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}middle_tip">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="-0.000704283150912199 1.7201949642498E-08 -0.00102507469949608"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-8.56607522325298E-17"
+          ixz="-2.97431807749547E-12"
+          iyy="1.0000000000E-07"
+          iyz="-1.96338363593216E-16"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="-0.000704283128653865 1.67839236536738E-08 -0.00102507470098162"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-8.5660752233E-17"
+          ixz="-2.9743180775E-12"
+          iyy="1.0000000000E-07"
+          iyz="-1.9633836359E-16"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}middle_tip.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}middle_tip.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}middle_tip_joint" type="fixed">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="-2.14438756649671E-05 0.0347938058137823 0.00223431434988798"
+              rpy="0.0212852224144184 -1.10096720678332 -1.5897782789153"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="2.14438757245201E-05 0.0347938058137771 0.00223431434988275"
+              rpy="-0.0212852224193426 -1.10096720678329 -1.55181437467009"/>
+    </xacro:if>
+
+    <parent link="${prefix}middle_rubber_2"/>
+    <child link="${prefix}middle_tip"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- RING 1                                                        -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}ring_1">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="0.00046149481752461 0.0116511737378717 -0.00589994851254672"
+                rpy="0 0 0"/>
+        <mass value="0.00313603242920605"/>
+        <inertia
+          ixx="4.99060820960054E-07"
+          ixy="-3.95143745747422E-08"
+          ixz="9.0918258040865E-14"
+          iyy="1.54314829938476E-07"
+          iyz="-2.76758102855439E-12"
+          izz="5.22983831870586E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="0.000461529808951755 0.0116516281013052 0.00589997080611728"
+                rpy="0 0 0"/>
+        <mass value="3.1360324292E-03"/>
+        <inertia
+          ixx="4.9906082096E-07"
+          ixy="-3.9514374575E-08"
+          ixz="-9.0918258041E-14"
+          iyy="1.5431482994E-07"
+          iyz="-2.7675810286E-12"
+          izz="5.2298383187E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}ring_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}ring_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}ring_1_joint" type="revolute">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="-0.0022453318336232 0.104505254785017 -0.0204370178446974"
+              rpy="-0.0523598775598309 0 0"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.0022453318336232 0.104505254785017 0.00956298212738258"
+              rpy="-3.10687289847015 0 -3.14159265358979"/>
+    </xacro:if>
+
+    <parent link="${prefix}hand_base"/>
+    <child link="${prefix}ring_1"/>
+    <axis xyz="0 0 -1"/>
+
+    <limit lower="0"
+           upper="1.344277"
+           effort="10"
+           velocity="2"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- RING RUBBER 1                                                 -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}ring_rubber_1">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="3.97260010304157E-07 -0.000277764179520239 -0.0081076194726033"
+                rpy="0 0 0"/>
+        <mass value="0.00100758613953433"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="9.3673932045207E-13"
+          ixz="3.62378809448717E-13"
+          iyy="1.0000000000E-07"
+          iyz="-1.10190419604946E-08"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="5.21559770035084E-07 -0.00027711873325572 -0.00810658713183561"
+                rpy="0 0 0"/>
+        <mass value="1.0075861395E-03"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="9.3673932045E-13"
+          ixz="3.6237880945E-13"
+          iyy="1.0000000000E-07"
+          iyz="-1.1019041960E-08"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}ring_rubber_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}ring_rubber_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}ring_rubber_1_joint" type="fixed">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.010962118330056 0.0154753071906455 -0.00589999770412791"
+              rpy="-1.63727058319619 1.57079545842661 -1.57079632679395"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.010962 0.015475 0.0059"
+              rpy="1.5043 1.5708 1.5708"/>
+    </xacro:if>
+
+    <parent link="${prefix}ring_1"/>
+    <child link="${prefix}ring_rubber_1"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- RING 2                                                        -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}ring_2">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="0.000846463894616317 0.0159699347053668 -0.0051010904739314"
+                rpy="0 0 0"/>
+        <mass value="0.00329259763446652"/>
+        <inertia
+          ixx="2.85620461419742E-07"
+          ixy="-9.65832553004102E-08"
+          ixz="1.14615829919027E-11"
+          iyy="1.0000000000E-07"
+          iyz="2.13996414103747E-11"
+          izz="3.3143342475777E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="0.000846433960369861 0.0159697337276641 0.00510097835693506"
+                rpy="0 0 0"/>
+        <mass value="3.2925976345E-03"/>
+        <inertia
+          ixx="2.8562046142E-07"
+          ixy="-9.6583255300E-08"
+          ixz="-1.1461582992E-11"
+          iyy="1.0000000000E-07"
+          iyz="-2.1399641410E-11"
+          izz="3.3143342476E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}ring_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}ring_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}ring_2_joint" type="revolute">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.00711888977031674 0.031333910351405 -0.000800000000000023"
+              rpy="0 0 0"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.0071189 0.031334 0.0008"
+              rpy="0 0 0"/>
+    </xacro:if>
+
+    <parent link="${prefix}ring_1"/>
+    <child link="${prefix}ring_2"/>
+    <axis xyz="0 0 -1"/>
+
+    <limit lower="-0.15"
+           upper="1.59562"
+           effort="10"
+           velocity="2"/>
+
+    <mimic joint="${prefix}ring_1_joint"
+           multiplier="1.1169"
+           offset="-0.15"/>
+
+  </joint>
+
+
+  <!-- ============================================================= -->
+  <!-- RING RUBBER 2                                                 -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}ring_rubber_2">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="0.00104284546218292 0.0157830815140177 0.00127604090326092"
+                rpy="0 0 0"/>
+        <mass value="0.0011900510522096"/>
+        <inertia
+          ixx="1.35418744149707E-07"
+          ixy="-7.15356862405758E-09"
+          ixz="-1.95071607592085E-09"
+          iyy="1.0000000000E-07"
+          iyz="-2.9378722813243E-08"
+          izz="1.31791666226389E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="3.86139388208794E-06 0.0158537656121268 -0.000683069774846418"
+                rpy="0 0 0"/>
+        <mass value="1.1900510522E-03"/>
+        <inertia
+          ixx="1.3541874415E-07"
+          ixy="7.1535686241E-09"
+          ixz="-1.9507160759E-09"
+          iyy="1.0000000000E-07"
+          iyz="-2.9378722813E-08"
+          izz="1.3179166623E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}ring_rubber_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}ring_rubber_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}ring_rubber_2_joint" type="fixed">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.00685339412965172 0.0123693480370854 -0.00508520214385935"
+              rpy="1.5707963267949 1.51843644923506 1.5707963267949"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.00685339412965266 0.0123693480371164 0.0050852021440689"
+              rpy="1.69435491572921 1.55693797492977 1.5707963267949"/>
+    </xacro:if>
+
+    <parent link="${prefix}ring_2"/>
+    <child link="${prefix}ring_rubber_2"/>
+
+  </joint>
+
+
+  <!-- ============================================================= -->
+  <!-- RING PAD                                                      -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}ring_pad">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="-4.94030643549692E-06 -0.00107358706632565 -0.000867313787048102"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-1.02094554854037E-14"
+          ixz="1.13379094195E-13"
+          iyy="1.0000000000E-07"
+          iyz="-1.72170092059304E-12"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="4.93671885636732E-06 -0.00107358739426554 -0.000867321750761263"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="1.0209455485E-14"
+          ixz="-1.1337909419E-13"
+          iyy="1.0000000000E-07"
+          iyz="-1.7217009206E-12"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}ring_pad.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}ring_pad.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}ring_pad_joint" type="fixed">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.00154807236433219 0.0228616868969242 0.00851055241573044"
+              rpy="0.193248706440358 0 -0.0666352370810103"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="-3.19252405448149E-05 0.023788208012268 0.0056216455404758"
+              rpy="0.069690128142456 5.13938714334209E-05 0.000413828517329857"/>
+    </xacro:if>
+
+    <parent link="${prefix}ring_rubber_2"/>
+    <child link="${prefix}ring_pad"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- RING TIP                                                      -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}ring_tip">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="-0.000856665327644918 1.70945193556093E-08 -0.00102183693569345"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-3.08326142677952E-16"
+          ixz="-2.20293053403915E-12"
+          iyy="1.0000000000E-07"
+          iyz="-2.10809793762129E-16"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="-0.000856664915059729 1.84558855672104E-08 -0.00102183703604269"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-3.0832614268E-16"
+          ixz="-2.2029305340E-12"
+          iyy="1.0000000000E-07"
+          iyz="-2.1080979376E-16"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}ring_tip.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}ring_tip.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}ring_tip_joint" type="fixed">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.0020441281919974 0.0306119852979382 0.00628642959658904"
+              rpy="-0.0109233493860337 -1.03087334028373 -1.62695251466279"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="-1.40578386722194E-05 0.031221027471983 0.00245734551696726"
+              rpy="0.0139894535346192 -1.15442399923571 -1.58358580818303"/>
+    </xacro:if>
+
+    <parent link="${prefix}ring_rubber_2"/>
+    <child link="${prefix}ring_tip"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- LITTLE 1                                                      -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}little_1">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="0.000461475145813836 0.0116511477169123 -0.00589994431843399"
+                rpy="0 0 0"/>
+        <mass value="0.00313603875974869"/>
+        <inertia
+          ixx="4.99061732632513E-07"
+          ixy="-3.95150807555593E-08"
+          ixz="3.29643374362596E-13"
+          iyy="1.54315415119772E-07"
+          iyz="-2.68499196384908E-12"
+          izz="5.22985239082346E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="0.000461535865007925 0.0116516313664518 0.00589997438900475"
+                rpy="0 0 0"/>
+        <mass value="3.1360387597E-03"/>
+        <inertia
+          ixx="4.9906173263E-07"
+          ixy="-3.9515080756E-08"
+          ixz="-3.2964337436E-13"
+          iyy="1.5431541512E-07"
+          iyz="-2.6849919638E-12"
+          izz="5.2298523908E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}little_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}little_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}little_1_joint" type="revolute">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="-0.00224533363585604 0.103303988639843 -0.0396374817119981"
+              rpy="-0.104719755119647 0 0"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.00224533363585604 0.103303988640658 -0.00963748173991816"
+              rpy="-3.0387289847015 0 -3.14159265358979"/>
+    </xacro:if>
+
+    <parent link="${prefix}hand_base"/>
+    <child link="${prefix}little_1"/>
+
+    <axis xyz="0 0 -1"/>
+
+    <limit lower="0"
+           upper="1.344277"
+           effort="10"
+           velocity="2"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- LITTLE RUBBER 1                                               -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}little_rubber_1">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="3.96620438825046E-07 -0.000277753553895421 -0.00810761573399517"
+                rpy="0 0 0"/>
+        <mass value="0.00100758679674637"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="9.76259542731449E-13"
+          ixz="3.4017888649422E-13"
+          iyy="1.0000000000E-07"
+          iyz="-1.10190612465513E-08"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="5.20179807662197E-07 -0.000277124687351721 -0.00810660245069689"
+                rpy="0 0 0"/>
+        <mass value="1.0075867967E-03"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="9.7625954273E-13"
+          ixz="3.4017888649E-13"
+          iyy="1.0000000000E-07"
+          iyz="-1.1019061247E-08"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}little_rubber_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}little_rubber_1.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}little_rubber_1_joint" type="fixed">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.0109621183302624 0.0154753071907081 -0.0058999977041195"
+              rpy="-1.63727058315032 1.57079545829877 -1.57079632674945"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.010962 0.015475 0.0059"
+              rpy="1.5043 1.5708 1.5708"/>
+    </xacro:if>
+
+    <parent link="${prefix}little_1"/>
+    <child link="${prefix}little_rubber_1"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- LITTLE 2                                                      -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}little_2">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="-9.66953409735488E-05 0.0131703851115681 -0.0051009352074308"
+                rpy="0 0 0"/>
+        <mass value="0.00261913175532863"/>
+        <inertia
+          ixx="1.61202126201402E-07"
+          ixy="-4.97996992197648E-08"
+          ixz="7.72395884071146E-12"
+          iyy="1.0000000000E-07"
+          iyz="1.70585616369544E-11"
+          izz="1.85396555993052E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="-9.65934753168612E-05 0.0131706385669229 0.00510089546104599"
+                rpy="0 0 0"/>
+        <mass value="2.6191317553E-03"/>
+        <inertia
+          ixx="1.6120212620E-07"
+          ixy="-4.9799699220E-08"
+          ixz="-7.7239588407E-12"
+          iyy="1.0000000000E-07"
+          iyz="-1.7058561637E-11"
+          izz="1.8539655599E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}little_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}little_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}little_2_joint" type="revolute">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.00711888977031677 0.0313339103514049 -0.000799999999999995"
+              rpy="0 0 0"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.0071189 0.031334 0.011"
+              rpy="0 0 0"/>
+    </xacro:if>
+
+    <parent link="${prefix}little_1"/>
+    <child link="${prefix}little_2"/>
+
+    <axis xyz="0 0 -1"/>
+
+    <limit lower="-0.15"
+           upper="1.59562"
+           effort="10"
+           velocity="2"/>
+
+    <mimic joint="${prefix}little_1_joint"
+           multiplier="1.1169"
+           offset="-0.15"/>
+
+  </joint>
+
+
+  <!-- ============================================================= -->
+  <!-- LITTLE RUBBER 2                                               -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}little_rubber_2">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="7.99800886075452E-08 0.0112749035859891 -0.000128893404753347"
+                rpy="0 0 0"/>
+        <mass value="0.000944677110750505"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="8.7944783960686E-12"
+          ixz="-4.11179878788431E-13"
+          iyy="1.0000000000E-07"
+          iyz="-1.31114374351836E-08"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="1.62425876137906E-07 0.0112748945844156 -0.000128890409676133"
+                rpy="0 0 0"/>
+        <mass value="9.4467711075E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="8.7944783961E-12"
+          ixz="4.1117987879E-13"
+          iyy="1.0000000000E-07"
+          iyz="-1.3111437435E-08"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}little_rubber_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}little_rubber_2.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}little_rubber_2_joint" type="fixed">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.00605975881840989 0.0120279982928333 -0.00510001089644316"
+              rpy="3.14068811224663 1.57007206953461 3.13379721155807"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0.0060598 0.012028 -0.00510001089644316"
+              rpy="-1.5639 1.5708 -1.5708"/>
+    </xacro:if>
+
+    <parent link="${prefix}little_2"/>
+    <child link="${prefix}little_rubber_2"/>
+
+  </joint>
+
+
+  <!-- ============================================================= -->
+  <!-- LITTLE PAD                                                    -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}little_pad">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="4.26351731697139E-09 -0.000945394972293657 -0.000793541046852683"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="1.61934642095291E-17"
+          ixz="1.17587638114365E-16"
+          iyy="1.0000000000E-07"
+          iyz="-1.09095131218755E-12"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="1.18945155044847E-08 -0.000945393602624786 -0.000793542159615274"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-1.6193464210E-17"
+          ixz="1.1758763811E-16"
+          iyy="1.0000000000E-07"
+          iyz="-1.0909513122E-12"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}little_pad.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}little_pad.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}little_pad_joint" type="fixed">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0 0.0158106591438754 0.00622450775451257"
+              rpy="0.234319162085704 -0.000724253436295822 0"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0 0.0158106591438756 0.00622450938719539"
+              rpy="0.234319161981939 0 0"/>
+    </xacro:if>
+
+    <parent link="${prefix}little_rubber_2"/>
+    <child link="${prefix}little_pad"/>
+
+  </joint>
+
+
+
+  <!-- ============================================================= -->
+  <!-- LITTLE TIP                                                    -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}little_tip">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="-0.000679511004398545 -7.33584859524683E-09 -0.0009899693704125"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-6.23802723798247E-17"
+          ixz="-2.37868618847864E-12"
+          iyy="1.0000000000E-07"
+          iyz="4.01471577675434E-17"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="-0.000679510924646992 -6.02486744175068E-09 -0.000989969384403724"
+                rpy="0 0 0"/>
+        <mass value="1.0000000000E-04"/>
+        <inertia
+          ixx="1.0000000000E-07"
+          ixy="-6.2380272380E-17"
+          ixz="-2.3786861885E-12"
+          iyy="1.0000000000E-07"
+          iyz="4.0147157768E-17"
+          izz="1.0000000000E-07"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}little_tip.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}little_tip.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}little_tip_joint" type="fixed">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0 0.0235281291193634 0.00364792987438493"
+              rpy="0.00195594039193604 -1.19148436669212 -1.57261259196533"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="0 0.0235281291193636 0.00364793083244132"
+              rpy="0.00195594039193604 -1.19148502417136 -1.57079698453249"/>
+    </xacro:if>
+
+    <parent link="${prefix}little_rubber_2"/>
+    <child link="${prefix}little_tip"/>
+
+  </joint>
+
+
+  <!-- ============================================================= -->
+  <!-- PALM                                                          -->
+  <!-- ============================================================= -->
+
+  <link name="${prefix}palm">
+
+    <!-- ================= INERTIAL ================= -->
+    <xacro:if value="${side == 'left'}">
+      <inertial>
+        <origin xyz="0.0048754084307947 -0.00792635358921372 0.000407295131145555"
+                rpy="0 0 0"/>
+        <mass value="0.0103867697224328"/>
+        <inertia
+          ixx="4.32579238773537E-06"
+          ixy="1.82986381074143E-06"
+          ixz="-1.24431557170631E-07"
+          iyy="5.02135147678096E-06"
+          iyz="6.0880720395417E-07"
+          izz="9.01588192510949E-06"/>
+      </inertial>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <inertial>
+        <origin xyz="-0.00487476115291697 -0.00792590594988131 0.000407287403626957"
+                rpy="0 0 0"/>
+        <mass value="1.0386769722E-02"/>
+        <inertia
+          ixx="4.3257923877E-06"
+          ixy="-1.8298638107E-06"
+          ixz="1.2443155717E-07"
+          iyy="5.0213514768E-06"
+          iyz="6.0880720395E-07"
+          izz="9.0158819251E-06"/>
+      </inertial>
+    </xacro:if>
+
+    <!-- ================= VISUAL ================= -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_visual}/${prefix}palm.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.298039215686275 0.298039215686275 0.298039215686275 1"/>
+      </material>
+    </visual>
+
+    <!-- ================= COLLISION ================= -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="${mesh_collision}/${prefix}palm.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+  </link>
+
+  <!-- ================= JOINT ================= -->
+
+  <joint name="${prefix}palm_joint" type="fixed">
+
+    <xacro:if value="${side == 'left'}">
+      <origin xyz="0.0124026678056337 0.0690814278199097 -0.0185014368261144"
+              rpy="3.14159265242298 1.57079623022433 3.14159265242298"/>
+    </xacro:if>
+
+    <xacro:if value="${side == 'right'}">
+      <origin xyz="-0.0127026878056337 0.0690814278199097 0.0114914368261144"
+              rpy="-3.14159265242298 -1.57079623022433 3.14159265242298"/>
+    </xacro:if>
+
+    <parent link="${prefix}hand_base"/>
+    <child link="${prefix}palm"/>
+
+  </joint>
+
+  </xacro:macro>
+
+</robot>

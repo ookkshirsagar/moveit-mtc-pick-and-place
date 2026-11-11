@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--
+    Macro: Mount for Inspire Hand RH56DFX 
+
+    Purpose:
+    - Attaches the Inspire robotic hand to the Inspire adapter mounted on the UR5e tool flange.
+    - Adds a cosmetic cable outlet on the wrist housing.
+
+    Notes:
+    - This macro is for usage of both left and right hand..
+    - All joints are FIXED; no kinematic DOFs are introduced here.
+  -->
+
+  <xacro:macro
+    name="mount_rh56dfx"
+    params="
+      parent_link
+      prefix:=hand_
+    ">
+
+    <!-- ========================================================= -->
+    <!-- 1. Parent → Hand Root                                    -->
+    <!-- ========================================================= -->
+
+    <joint name="${prefix}mount_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child  link="${prefix}hand_root"/>
+      <origin xyz="0 0.009 0"
+              rpy="-1.5708 3.14159 0"/>
+    </joint>
+
+
+    <!-- ========================================================= -->
+    <!-- 2. Cable Outlet Link                                     -->
+    <!-- ========================================================= -->
+
+    <link name="${prefix}cable_outlet">
+
+      <!-- Minimal inertial for Physics Simulator -->
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.0001"/>
+        <inertia ixx="1e-8" ixy="0" ixz="0"
+                 iyy="1e-8" iyz="0"
+                 izz="1e-8"/>
+      </inertial>
+
+      <!-- Upper cap -->
+      <visual>
+        <origin xyz="0 0 0.004" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.008" radius="0.006"/>
+        </geometry>
+        <material name="cap_gray">
+          <color rgba="0.89 0.91 0.93 1"/>
+        </material>
+      </visual>
+
+      <collision>
+        <origin xyz="0 0 0.004" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.008" radius="0.006"/>
+        </geometry>
+        <material name="">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </collision>
+
+      <!-- Lower insert -->
+      <visual>
+        <origin xyz="0 0 -0.0075" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.015" radius="0.0025"/>
+        </geometry>
+        <material name="metal_gray">
+          <color rgba="0.6 0.6 0.6 1"/>
+        </material>
+      </visual>
+
+    </link>
+
+
+    <!-- ========================================================= -->
+    <!-- 3. Attach Cable Outlet to Wrist Base                     -->
+    <!-- ========================================================= -->
+
+    <joint name="${prefix}cable_joint" type="fixed">
+      <parent link="${prefix}wrist_base_link"/>
+      <child  link="${prefix}cable_outlet"/>
+      <origin xyz="-0.035 0 0.026"
+              rpy="1.5708 0 1.5708"/>
+    </joint>
+
+  </xacro:macro>
+
+</robot>
+ 
