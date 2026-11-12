@@ -25,19 +25,28 @@ struct PreGraspStages {
 // Multi-grasp pregrasp generator
 // ==========================================================
 // planner: passed in from pick_pipeline (pilz PTP for smooth motion)
+// object:  collision object to grasp; the pregrasp is `height` above its centre
 // arm_tip: IK tip link
+// hand_prefix: "left_" or "right_". The two hands are mirror images across the finger-spread axis
+//   (adapter z): the thumb sits at z = -21 mm on the left hand and +21 mm on the right, so the point
+//   centred between thumb and fingers is at z = -15 mm on the left and +15 mm on the right.
 inline std::vector<PreGraspStages> createMoveToPreGraspStages(
     const std::string& group,
     const std::shared_ptr<mtc::solvers::PipelinePlanner>& planner,
-    const std::string& arm_tip = "inspire_adapter_link")
+    const std::string& object = "pick_cube",
+    double height = 0.25,
+    const std::string& arm_tip = "inspire_adapter_link",
+    const std::string& hand_prefix = "left_")
 {
+  const double grasp_centre_z = hand_prefix == "right_" ? 0.015 : -0.015;
+
   std::vector<PreGraspStages> result;
 
-  // Small Y offsets — vary approach to improve IK success rate
+  // Grasp candidates as (x, y) offsets of the hand from the cube centre. Only the centred grasp:
+  // it puts the fingers and thumb symmetrically on opposite faces. Add offsets here to give IK more
+  // candidates for hard-to-reach cubes (the pipeline tries one branch per entry).
   std::vector<std::pair<double, double>> offsets = {
-      {0.0,  0.000},   // center grasp
-      {0.0,  0.010},   // +1cm Y shift
-      {0.0, -0.010},   // -1cm Y shift
+      {0.0, 0.0},
   };
 
   for (size_t i = 0; i < offsets.size(); ++i)
@@ -65,13 +74,13 @@ inline std::vector<PreGraspStages> createMoveToPreGraspStages(
     gen_pose->properties().configureInitFrom(mtc::Stage::PARENT);
 
     geometry_msgs::msg::PoseStamped target;
-    target.header.frame_id = "pick_cube";
+    target.header.frame_id = object;
 
     // Position relative to cube center
     // x offset compensates for adapter-to-TCP geometry
     target.pose.position.x = dx - 0.005;
     target.pose.position.y = dy;
-    target.pose.position.z = 0.25;   // 25cm above cube center
+    target.pose.position.z = height;
 
     // Grasp orientation — produces correct finger approach angle
     target.pose.orientation.x = -0.650;
@@ -82,10 +91,10 @@ inline std::vector<PreGraspStages> createMoveToPreGraspStages(
     gen_pose->setPose(target);
 
     // ── IK ───────────────────────────────────────────────────
-    // Transform: inspire_adapter_link → left_tcp
-    // Confirmed from TF: translation=[0, 0.168, -0.015], 180° around Y
+    // Transform: inspire_adapter_link → grasp centre between thumb and fingers
+    // (the left hand's tcp: translation=[0, 0.168, -0.015], 180° around Y; mirrored in z for the right)
     Eigen::Isometry3d adapter_to_tcp = Eigen::Isometry3d::Identity();
-    adapter_to_tcp.translation() = Eigen::Vector3d(0.0, 0.168, -0.015);
+    adapter_to_tcp.translation() = Eigen::Vector3d(0.0, 0.168, grasp_centre_z);
 
     // Eigen::Quaterniond(w, x, y, z): w=0, y=1 = 180° around Y
     Eigen::Quaterniond q_adapter_to_tcp(0.0, 0.0, 1.0, 0.0);

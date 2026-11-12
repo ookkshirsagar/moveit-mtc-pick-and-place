@@ -6,19 +6,17 @@ Relays /joint_states_raw → /joint_states, stripping mimic/distal
 joints that Isaac Sim publishes but MoveIt doesn't command.
 
 Why this is needed:
-  Isaac Sim publishes all 20 joints including mimic distal joints
-  (left_index_2, left_middle_2, etc.) with small non-zero physics
-  positions due to finite drive stiffness. When MoveIt's CurrentState
-  stage reads these, collision checking sees slightly wrong finger
-  geometry and fails to find paths that succeed with mock_components.
+  Isaac Sim publishes every hand joint, including the 6 mimic distal joints
+  (<side>_index_2_joint, ...), with small non-zero positions from the finite
+  drive stiffness. When MoveIt's CurrentState stage reads these, collision
+  checking sees slightly wrong finger geometry and fails to find paths that
+  succeed with mock_components.
 
-  This filter strips the 6 mimic joints so MoveIt only sees the 14
-  commanded joints — matching the mock_components/joint_state_broadcaster
-  behavior exactly.
+  This filter strips the mimic joints so MoveIt only sees the 14 commanded
+  joints, as with mock_components/joint_state_broadcaster. Joints are matched
+  by name without the "left_"/"right_" prefix, so either hand works.
 
-Usage:
-  Change Isaac's OmniGraph publisher topic from "/joint_states" to
-  "/joint_states_raw", then run this node. MoveIt stays on "/joint_states".
+Isaac publishes on /joint_states_raw (isaac/pick_place_scene.py); MoveIt reads /joint_states.
 """
 
 import rclpy
@@ -27,12 +25,12 @@ from sensor_msgs.msg import JointState
 
 # Mimic/distal joints — strip entirely (not commanded by MoveIt)
 MIMIC_JOINTS = {
-    "left_index_2_joint",
-    "left_middle_2_joint",
-    "left_ring_2_joint",
-    "left_little_2_joint",
-    "left_thumb_3_joint",
-    "left_thumb_4_joint",
+    "index_2_joint",
+    "middle_2_joint",
+    "ring_2_joint",
+    "little_2_joint",
+    "thumb_3_joint",
+    "thumb_4_joint",
 }
 
 # Hand primary joints — pass through but zero out physics noise.
@@ -40,15 +38,23 @@ MIMIC_JOINTS = {
 # is drive stiffness error, not meaningful state. Zeroing them makes
 # MoveIt see the same collision geometry as mock_components does.
 ZERO_AT_HOME = {
-    "left_wrist_yaw_joint",
-    "left_hand_base_joint",
-    "left_index_1_joint",
-    "left_middle_1_joint",
-    "left_ring_1_joint",
-    "left_little_1_joint",
-    "left_thumb_1_joint",
-    "left_thumb_2_joint",
+    "wrist_yaw_joint",
+    "hand_base_joint",
+    "index_1_joint",
+    "middle_1_joint",
+    "ring_1_joint",
+    "little_1_joint",
+    "thumb_1_joint",
+    "thumb_2_joint",
 }
+
+
+def hand_joint(name):
+    """Joint name without the hand's side prefix ("left_index_2_joint" -> "index_2_joint")."""
+    for side in ("left_", "right_"):
+        if name.startswith(side):
+            return name[len(side):]
+    return name
 
 
 class JointStateFilter(Node):
@@ -75,7 +81,7 @@ class JointStateFilter(Node):
         filtered.header = msg.header
 
         for i, name in enumerate(msg.name):
-            if name in MIMIC_JOINTS:
+            if hand_joint(name) in MIMIC_JOINTS:
                 continue  # strip entirely
 
             filtered.name.append(name)
@@ -86,7 +92,7 @@ class JointStateFilter(Node):
 
             # Zero out hand joints — physics noise causes
             # collision check failures vs mock_components behavior
-            if name in ZERO_AT_HOME:
+            if hand_joint(name) in ZERO_AT_HOME:
                 pos = 0.0
                 vel = 0.0
 

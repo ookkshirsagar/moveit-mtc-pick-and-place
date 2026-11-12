@@ -26,7 +26,85 @@ namespace mtc = moveit::task_constructor;
 // Per actuated joint (thumb rotation first, then the fingers,
 // thumb flexion last) we bisect the closing fraction against a
 // collision check that only looks at hand ↔ object contacts.
+// closeUntilContact() is the algorithm, CloseUntilContact the
+// MTC stage that runs it.
 // ==========================================================
+
+// Closes `state`'s joints towards `goal`, each stopping just before any link it moves touches `object`.
+// The hand ↔ object contact check ignores the scene's ACM entries for those links, so it also works after
+// a stage allowed hand ↔ object collisions. Returns false if a joint in `goal` is unknown.
+inline bool closeUntilContact(const planning_scene::PlanningScene& scene, moveit::core::RobotState& state,
+                              const std::map<std::string, double>& goal, const std::string& object)
+{
+  const auto& model = *state.getRobotModel();
+  for (const auto& [joint, value] : goal)
+    if (!model.hasJointModel(joint)) return false;
+
+  // ACM that forbids hand ↔ object contact, everything else as in the scene. The group only holds
+  // the actuated joints, so collect every link they move: the distal phalanges, pads and tips hang
+  // off mimic joints and would otherwise keep the "allowed" entry and close through the object.
+  std::vector<std::string> hand_links;
+  for (const auto& [joint, value] : goal) {
+    for (const auto* l : model.getJointModel(joint)->getDescendantLinkModels())
+      if (!l->getShapes().empty()) hand_links.push_back(l->getName());
+  }
+  auto acm = scene.getAllowedCollisionMatrix();
+  acm.setEntry(object, hand_links, false);
+
+  // does any link moved by `joint` touch the object?
+  auto touches_object = [&](const std::string& joint) {
+    std::set<std::string> moved;
+    for (const auto* l : model.getJointModel(joint)->getDescendantLinkModels())
+      moved.insert(l->getName());
+    collision_detection::CollisionRequest req;
+    req.contacts = true;
+    req.max_contacts = 1000;
+    req.pad_environment_collisions = false;   // test the real surfaces, not the padded ones
+    req.pad_self_collisions = false;
+    collision_detection::CollisionResult res;
+    scene.checkCollision(req, res, state, acm);
+    for (const auto& c : res.contacts) {
+      const auto& [a, b] = c.first;
+      if ((a == object && moved.count(b)) || (b == object && moved.count(a))) return true;
+    }
+    return false;
+  };
+
+  // thumb rotation, fingers, then thumb flexion so it closes onto the object last
+  std::vector<std::string> order;
+  for (const auto& [joint, value] : goal) {
+    if (joint.find("thumb_1") != std::string::npos) order.insert(order.begin(), joint);
+  }
+  for (const auto& [joint, value] : goal) {
+    if (joint.find("thumb") == std::string::npos) order.push_back(joint);
+  }
+  for (const auto& [joint, value] : goal) {
+    if (joint.find("thumb") != std::string::npos && joint.find("thumb_1") == std::string::npos)
+      order.push_back(joint);
+  }
+
+  for (const auto& joint : order) {
+    const double start = state.getVariablePosition(joint);
+    const double target = goal.at(joint);
+    auto set = [&](double fraction) {
+      double v = start + fraction * (target - start);
+      state.setJointPositions(joint, &v);
+      state.update();
+    };
+
+    set(1.0);
+    if (!touches_object(joint)) continue;          // never reaches the object: close fully
+
+    double free = 0.0, hit = 1.0;             // bisect for first contact (~0.1 % of travel)
+    for (int i = 0; i < 10; ++i) {
+      double mid = 0.5 * (free + hit);
+      set(mid);
+      (touches_object(joint) ? hit : free) = mid;
+    }
+    set(free);
+  }
+  return true;
+}
 
 class CloseUntilContact : public mtc::PropagatingForward
 {
@@ -51,75 +129,11 @@ public:
     const auto* jmg = state.getJointModelGroup(group_);
 
     std::map<std::string, double> goal;
-    if (!jmg || !jmg->getVariableDefaultPositions(goal_, goal)) {
+    if (!jmg || !jmg->getVariableDefaultPositions(goal_, goal) || !closeUntilContact(*scene, state, goal, object_)) {
       mtc::SubTrajectory failure;
       failure.markAsFailure("unknown group '" + group_ + "' or state '" + goal_ + "'");
       sendForward(from, mtc::InterfaceState(from.scene()), std::move(failure));
       return;
-    }
-
-    // ACM that forbids hand ↔ object contact, everything else as in the scene. The group only holds
-    // the actuated joints, so collect every link they move: the distal phalanges, pads and tips hang
-    // off mimic joints and would otherwise keep the "allowed" entry and close through the object.
-    std::vector<std::string> hand_links;
-    for (const auto& [joint, value] : goal) {
-      for (const auto* l : state.getRobotModel()->getJointModel(joint)->getDescendantLinkModels())
-        if (!l->getShapes().empty()) hand_links.push_back(l->getName());
-    }
-    auto acm = scene->getAllowedCollisionMatrix();
-    acm.setEntry(object_, hand_links, false);
-
-    // does any link moved by `joint` touch the object?
-    auto touches_object = [&](const std::string& joint) {
-      std::set<std::string> moved;
-      for (const auto* l : state.getRobotModel()->getJointModel(joint)->getDescendantLinkModels())
-        moved.insert(l->getName());
-      collision_detection::CollisionRequest req;
-      req.contacts = true;
-      req.max_contacts = 1000;
-      req.pad_environment_collisions = false;   // test the real surfaces, not the padded ones
-      req.pad_self_collisions = false;
-      collision_detection::CollisionResult res;
-      scene->checkCollision(req, res, state, acm);
-      for (const auto& c : res.contacts) {
-        const auto& [a, b] = c.first;
-        if ((a == object_ && moved.count(b)) || (b == object_ && moved.count(a))) return true;
-      }
-      return false;
-    };
-
-    // thumb rotation, fingers, then thumb flexion so it closes onto the object last
-    std::vector<std::string> order;
-    for (const auto& [joint, value] : goal) {
-      if (joint.find("thumb_1") != std::string::npos) order.insert(order.begin(), joint);
-    }
-    for (const auto& [joint, value] : goal) {
-      if (joint.find("thumb") == std::string::npos) order.push_back(joint);
-    }
-    for (const auto& [joint, value] : goal) {
-      if (joint.find("thumb") != std::string::npos && joint.find("thumb_1") == std::string::npos)
-        order.push_back(joint);
-    }
-
-    for (const auto& joint : order) {
-      const double start = state.getVariablePosition(joint);
-      const double target = goal.at(joint);
-      auto set = [&](double fraction) {
-        double v = start + fraction * (target - start);
-        state.setJointPositions(joint, &v);
-        state.update();
-      };
-
-      set(1.0);
-      if (!touches_object(joint)) continue;          // never reaches the object: close fully
-
-      double free = 0.0, hit = 1.0;             // bisect for first contact (~0.1 % of travel)
-      for (int i = 0; i < 10; ++i) {
-        double mid = 0.5 * (free + hit);
-        set(mid);
-        (touches_object(joint) ? hit : free) = mid;
-      }
-      set(free);
     }
 
     mtc::SubTrajectory solution;

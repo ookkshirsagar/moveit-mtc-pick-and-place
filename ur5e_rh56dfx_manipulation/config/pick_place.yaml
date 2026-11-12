@@ -1,0 +1,37 @@
+# Task parameters for mtc_node and scene_publisher (distances in m, world frame, z up).
+# The Isaac scene (isaac/pick_place_scene.py) reads the cube and stack positions from here too.
+/**:
+  ros__parameters:
+    # ── scene ────────────────────────────────────────────────
+    table_height: 0.855            # top face of the table_top collision box
+    cube_size: 0.075               # cube edge
+
+    cube_fixed_position: [-0.20, 0.13]               # cube_pose_mode:=fixed
+    cube_random_region: [-0.35, -0.10, 0.05, 0.35]   # cube_pose_mode:=random, [x_min, x_max, y_min, y_max]
+    cube_random_max_radius: 0.50                     # ... and at most this far from the base (reach)
+
+    place_fixed_offset: [0.0, -0.15]                 # place_pose_mode:=fixed, from where the cube was picked
+    place_random_region: [-0.32, -0.10, -0.22, -0.06]  # place_pose_mode:=random; never overlaps the cube region
+
+    # task:=stack picks these cubes in order and stacks them at stack_position
+    stack_cube_positions: [-0.32, 0.10,  -0.12, 0.10,  -0.22, 0.28]   # x0, y0, x1, y1, ...
+    stack_position: [-0.22, -0.14]
+
+    # ── motion ───────────────────────────────────────────────
+    pregrasp_height: 0.25          # palm target above the cube centre before the approach
+    approach_distance: 0.165       # straight down from pregrasp; stops the knuckles ~3 mm above the cube.
+                                   # A placed cube is carried in at this height above its rest pose too.
+    place_clearance: 0.005         # the cube is released this far above its support
+    grasp_retreat_distance: 0.08   # straight up right after attaching
+    lift_distance: 0.15
+    place_retreat_distance: 0.15   # straight up after releasing, before the hand opens fully
+    grasp_settle_time: 0.5         # s, pause between closing and attaching
+
+    ptp_velocity_scaling: 0.3      # Pilz PTP (home, pregrasp, place)
+    ptp_acceleration_scaling: 0.3
+    lift_velocity_scaling: 0.08    # slow Cartesian moves while the cube is held
+    place_velocity_scaling: 0.05
+
+    # ── planning ─────────────────────────────────────────────
+    planning_attempts: 3           # IK is seeded randomly: re-plan from scratch if no solution
+    max_solutions: 10

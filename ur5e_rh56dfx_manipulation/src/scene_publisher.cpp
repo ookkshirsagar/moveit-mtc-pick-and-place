@@ -7,9 +7,14 @@
 #include <tf2/exceptions.h>
 #include <shape_msgs/msg/solid_primitive.hpp>
 #include <geometry_msgs/msg/pose.hpp>
-#include <random>
+#include <string>
+#include <vector>
+
+#include "ur5e_rh56dfx_manipulation/config/placement.h"
 
 using namespace std::chrono_literals;
+using ur5e_rh56dfx_manipulation::cubeCentreZ;
+using ur5e_rh56dfx_manipulation::Region;
 
 class ScenePublisher : public rclcpp::Node
 {
@@ -21,11 +26,21 @@ public:
   {
     RCLCPP_INFO(get_logger(), "ScenePublisher started");
 
-    this->declare_parameter<std::string>("cube_pose_mode", "fixed");
-    this->declare_parameter<int>("random_seed", 0);
+    cube_mode_   = declare_parameter<std::string>("cube_pose_mode", "fixed");
+    task_mode_   = declare_parameter<std::string>("task", "pick_place");
+    random_seed_ = declare_parameter<int>("random_seed", 0);
 
-    cube_mode_  = this->get_parameter("cube_pose_mode").as_string();
-    random_seed_ = this->get_parameter("random_seed").as_int();
+    // defaults match config/pick_place.yaml
+    table_height_   = declare_parameter<double>("table_height", 0.855);
+    cube_size_      = declare_parameter<double>("cube_size", 0.075);
+    fixed_position_ = declare_parameter<std::vector<double>>("cube_fixed_position", {-0.20, 0.13});
+    random_region_  = Region::fromVector(
+        declare_parameter<std::vector<double>>("cube_random_region", {-0.35, -0.10, 0.05, 0.35}));
+    max_radius_     = declare_parameter<double>("cube_random_max_radius", 0.50);
+    stack_cubes_    = declare_parameter<std::vector<double>>(
+        "stack_cube_positions", {-0.32, 0.10, -0.12, 0.10, -0.22, 0.28});
+    if (fixed_position_.size() != 2 || stack_cubes_.size() % 2)
+      throw std::invalid_argument("cube_fixed_position must be [x, y], stack_cube_positions pairs of x, y");
 
     RCLCPP_INFO(get_logger(), "Cube pose mode: %s", cube_mode_.c_str());
 
@@ -44,8 +59,7 @@ public:
   }
 
 private:
-  static constexpr int    MAX_ATTEMPTS = 15;
-  static constexpr double CUBE_SIZE    = 0.075;
+  static constexpr int MAX_ATTEMPTS = 15;
 
   rclcpp::Client<moveit_msgs::srv::ApplyPlanningScene>::SharedPtr client_;
   rclcpp::TimerBase::SharedPtr timer_;
@@ -54,8 +68,11 @@ private:
 
   bool        scene_applied_;
   int         attempts_;
-  std::string cube_mode_;
+  std::string cube_mode_, task_mode_;
   int random_seed_ = 0;   // 0 = different every run
+  double table_height_, cube_size_, max_radius_;
+  std::vector<double> fixed_position_, stack_cubes_;
+  Region random_region_;
 
   // ============================================================
   // Get cube pose
@@ -85,17 +102,11 @@ private:
     }
 
     if (cube_mode_ == "random") {
-      std::mt19937 gen(random_seed_ ? static_cast<unsigned>(random_seed_) : std::random_device{}());
-      std::uniform_real_distribution<> x_dist(-0.35, -0.1);
-      std::uniform_real_distribution<> y_dist(0.05, 0.35);
-      double x, y;
-      do {
-        x = x_dist(gen);
-        y = y_dist(gen);
-      } while (std::sqrt(x*x + y*y) > 0.5);
-      pose_out.position.x    = x;
-      pose_out.position.y    = y;
-      pose_out.position.z    = 0.8925;
+      auto p = ur5e_rh56dfx_manipulation::samplePosition(
+          random_region_, static_cast<unsigned>(random_seed_), max_radius_);
+      pose_out.position.x    = p.x;
+      pose_out.position.y    = p.y;
+      pose_out.position.z    = cubeCentreZ(table_height_, cube_size_);
       pose_out.orientation.w = 1.0;
       RCLCPP_INFO(get_logger(), "Random cube: x=%.3f y=%.3f z=%.3f",
           pose_out.position.x, pose_out.position.y, pose_out.position.z);
@@ -103,27 +114,47 @@ private:
     }
 
     // Fixed (default)
-    pose_out.position.x    = -0.2;
-    pose_out.position.y    =  0.13;
-    pose_out.position.z    =  0.8925;
+    pose_out.position.x    = fixed_position_[0];
+    pose_out.position.y    = fixed_position_[1];
+    pose_out.position.z    = cubeCentreZ(table_height_, cube_size_);
     pose_out.orientation.w =  1.0;
     RCLCPP_INFO(get_logger(), "Fixed cube: x=%.3f y=%.3f z=%.3f",
         pose_out.position.x, pose_out.position.y, pose_out.position.z);
     return true;
   }
 
-  bool makeBox(moveit_msgs::msg::CollisionObject& obj)
+  moveit_msgs::msg::CollisionObject box(const std::string& id, const geometry_msgs::msg::Pose& pose) const
   {
+    moveit_msgs::msg::CollisionObject obj;
     obj.header.frame_id = "world";
-    obj.id              = "pick_cube";
+    obj.id              = id;
     shape_msgs::msg::SolidPrimitive prim;
     prim.type       = prim.BOX;
-    prim.dimensions = {CUBE_SIZE, CUBE_SIZE, CUBE_SIZE};
-    geometry_msgs::msg::Pose pose;
-    if (!getCubePose(pose)) return false;
+    prim.dimensions = {cube_size_, cube_size_, cube_size_};
     obj.primitives.push_back(prim);
     obj.primitive_poses.push_back(pose);
     obj.operation = obj.ADD;
+    return obj;
+  }
+
+  // pick_cube (task:=pick_place), or cube_0, cube_1, ... at stack_cube_positions (task:=stack)
+  bool makeCubes(std::vector<moveit_msgs::msg::CollisionObject>& out)
+  {
+    if (task_mode_ == "stack") {
+      for (size_t i = 0; i < stack_cubes_.size() / 2; ++i) {
+        geometry_msgs::msg::Pose pose;
+        pose.position.x    = stack_cubes_[2 * i];
+        pose.position.y    = stack_cubes_[2 * i + 1];
+        pose.position.z    = cubeCentreZ(table_height_, cube_size_);
+        pose.orientation.w = 1.0;
+        out.push_back(box("cube_" + std::to_string(i), pose));
+      }
+      RCLCPP_INFO(get_logger(), "Stack task: %zu cubes", out.size());
+      return true;
+    }
+    geometry_msgs::msg::Pose pose;
+    if (!getCubePose(pose)) return false;
+    out.push_back(box("pick_cube", pose));
     return true;
   }
 
@@ -147,13 +178,13 @@ private:
       return;
     }
 
-    moveit_msgs::msg::CollisionObject obj;
-    if (!makeBox(obj)) return;
+    std::vector<moveit_msgs::msg::CollisionObject> cubes;
+    if (!makeCubes(cubes)) return;
 
     auto request = std::make_shared<moveit_msgs::srv::ApplyPlanningScene::Request>();
     moveit_msgs::msg::PlanningScene scene;
     scene.is_diff = true;
-    scene.world.collision_objects.push_back(obj);
+    scene.world.collision_objects = cubes;
     request->scene = scene;
 
     client_->async_send_request(request,

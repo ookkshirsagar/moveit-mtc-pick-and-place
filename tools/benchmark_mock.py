@@ -5,8 +5,9 @@
     python3 src/moveit-mtc-pick-and-place/tools/benchmark_mock.py --runs 50
 
 Each run launches mtc_demo.launch.py headless with cube_pose_mode:=random place_pose_mode:=random and
-random_seed:=N, so a run can be repeated by its seed. Planning is retried up to planning_attempts times (default
-3). Prints one line per run and a Markdown summary.
+random_seed:=N, so a run can be repeated by its seed (--task stack runs the stacking task instead). Planning is
+retried up to planning_attempts times (default 3). Prints one line per run and a Markdown summary, and exits
+non-zero if fewer than --min-success percent of the runs succeed.
 """
 import argparse
 import os
@@ -14,6 +15,7 @@ import re
 import signal
 import statistics
 import subprocess
+import sys
 import time
 
 PLAN_TIME = re.compile(r"Init: (\d+) ms \| Plan: (\d+) ms")
@@ -25,9 +27,11 @@ OUTCOMES = {
 }
 
 
-def run_once(seed, timeout, side):
+def run_once(seed, timeout, side, task):
     cmd = ["ros2", "launch", "ur5e_rh56dfx_manipulation", "mtc_demo.launch.py", "rviz:=false",
-           f"side:={side}", "cube_pose_mode:=random", "place_pose_mode:=random", f"random_seed:={seed}"]
+           f"side:={side}", f"task:={task}", f"random_seed:={seed}"]
+    if task == "pick_place":
+        cmd += ["cube_pose_mode:=random", "place_pose_mode:=random"]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                             start_new_session=True, env={**os.environ, "PYTHONUNBUFFERED": "1"})
     start, outcome, plan_ms, replans = time.monotonic(), "timeout", None, 0
@@ -57,12 +61,14 @@ def main():
     ap.add_argument("--runs", type=int, default=50)
     ap.add_argument("--first-seed", type=int, default=1)
     ap.add_argument("--side", default="left")
+    ap.add_argument("--task", choices=["pick_place", "stack"], default="pick_place")
+    ap.add_argument("--min-success", type=float, default=0.0, help="exit 1 below this success rate (percent)")
     ap.add_argument("--timeout", type=float, default=180.0, help="seconds per run")
     a = ap.parse_args()
 
     results = []
     for seed in range(a.first_seed, a.first_seed + a.runs):
-        outcome, plan_ms, replans, total = run_once(seed, a.timeout, a.side)
+        outcome, plan_ms, replans, total = run_once(seed, a.timeout, a.side, a.task)
         results.append((seed, outcome, plan_ms, total, replans))
         print(f"seed {seed:3d}  {outcome:17s}  plan {plan_ms if plan_ms is not None else '-':>5} ms  "
               f"run {total:5.1f} s" + (f"  ({replans} re-plan)" if replans else ""), flush=True)
@@ -79,6 +85,8 @@ def main():
     for seed, outcome, *_ in results:
         if outcome != "success":
             print(f"failed: seed {seed} ({outcome})")
+    if 100 * len(ok) / len(results) < a.min_success:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -1,17 +1,18 @@
 """Isaac Sim scene for the MTC pick-and-place demo (hardware:=isaac).
 
-Builds a cell-free scene (UR5e + RH56DFX from the repo URDF, tabletop, a 7.5 cm physics cube),
-bridges it to ROS 2 for topic_based_ros2_control.
+Builds a cell-free scene (UR5e + RH56DFX from the repo URDF, tabletop, 7.5 cm physics cubes),
+bridges it to ROS 2 for topic_based_ros2_control. Cube positions come from
+ur5e_rh56dfx_manipulation/config/pick_place.yaml, the same file the ROS 2 side reads.
 
-  isaac side: isaac/run_scene.sh [--side left] [--headless]   (expands the URDF, sets up ROS 2)
-  ros2 side:  ros2 launch ur5e_rh56dfx_manipulation mtc_demo.launch.py hardware:=isaac
+  isaac side: isaac/run_scene.sh [--side left] [--task stack] [--headless]   (expands the URDF, sets up ROS 2)
+  ros2 side:  ros2 launch ur5e_rh56dfx_manipulation mtc_demo.launch.py hardware:=isaac [task:=stack]
 
 ROS 2 interface
   /joint_states_raw   (pub)  every joint incl. mimics; joint_state_filter.py relays it to /joint_states
   /joint_command      (sub)  position targets from topic_based_ros2_control
   /clock              (pub)  simulation time
-  /tf                 (pub)  world → pick_cube (cube_pose_mode:=isaac reads the pose from here)
-  /isaac_attach_cmd   (sub)  "ATTACH" / "DETACH" from isaac_attach_manager.py
+  /tf                 (pub)  world → each cube (cube_pose_mode:=isaac reads pick_cube from here)
+  /isaac_attach_cmd   (sub)  "ATTACH <cube>" / "DETACH <cube>" from isaac_attach_manager.py
 """
 import argparse
 import os
@@ -25,8 +26,12 @@ parser.add_argument("--urdf", required=True, help="xacro-expanded URDF (hardware
 parser.add_argument("--side", default="left")
 parser.add_argument("--usd-dir", default=os.path.expanduser("~/.cache/moveit_mtc_pick_and_place/usd"),
                     help="where the URDF importer writes the robot USD")
-parser.add_argument("--cube", default="-0.2,0.13",
-                    help="cube x,y on the table (world frame), or 'random' for a reachable spot MoveIt is not told about")
+parser.add_argument("--task", choices=["pick_place", "stack"], default="pick_place",
+                    help="stack: one cube per stack_cube_positions entry of the task config")
+parser.add_argument("--config", default="", help="task config (default: the installed config/pick_place.yaml)")
+parser.add_argument("--cube", default="",
+                    help="cube x,y on the table (world frame; default cube_fixed_position from the config), "
+                         "or 'random' for a reachable spot MoveIt is not told about")
 parser.add_argument("--seed", type=int, default=0, help="seed for --cube random (0 = different every run)")
 parser.add_argument("--grasp", choices=["fixed", "friction"], default="fixed",
                     help="friction: the cube is held by finger contact only; fixed: ATTACH adds a fixed joint")
@@ -59,8 +64,6 @@ from isaacsim.asset.importer.urdf.impl import URDFImporter, URDFImporterConfig
 from isaacsim.core.simulation_manager import SimulationManager
 
 PREFIX = f"{args.side}_"
-CUBE_SIZE = 0.075
-TABLE_TOP = 0.855                                   # top face of the URDF table_top collision box
 
 
 # ---------------------------------------------------------------- robot
@@ -71,6 +74,13 @@ def share(pkg):
             return os.path.join(prefix, "share", pkg)
     raise SystemExit(f"package '{pkg}' not found: source /opt/ros/jazzy and the workspace first")
 
+
+import yaml
+
+cfg_path = args.config or os.path.join(share("ur5e_rh56dfx_manipulation"), "config", "pick_place.yaml")
+task_cfg = yaml.safe_load(open(cfg_path))["/**"]["ros__parameters"]
+CUBE_SIZE = task_cfg["cube_size"]
+TABLE_TOP = task_cfg["table_height"]                 # top face of the URDF table_top collision box
 
 os.makedirs(args.usd_dir, exist_ok=True)
 pkgs = ["ur_description", "rh56dfx_description", "ur5e_rh56dfx_description"]
@@ -106,7 +116,6 @@ print(f"[scene] articulation: {art_root.GetPath()}  hand: {hand_base.GetPath()}"
 
 # actuated joints start at `home` (initial_positions.yaml); mimic joints follow their leader
 import xml.etree.ElementTree as ET
-import yaml
 
 urdf_joints = ET.parse(args.urdf).getroot().findall("joint")
 mimics = {j.get("name"): j.find("mimic") for j in urdf_joints if j.find("mimic") is not None}
@@ -177,32 +186,43 @@ ground.CreatePointsAttr([(-6, -6, 0), (6, -6, 0), (6, 6, 0), (-6, 6, 0)])
 ground.CreateFaceVertexCountsAttr([4]); ground.CreateFaceVertexIndicesAttr([0, 1, 2, 3])
 ground.CreateDisplayColorAttr([(0.16, 0.17, 0.19)])
 
-if args.cube == "random":                                # same region as scene_publisher's random mode
+if args.task == "stack":
+    xy = task_cfg["stack_cube_positions"]
+    spots = {f"cube_{i}": (xy[2 * i], xy[2 * i + 1]) for i in range(len(xy) // 2)}
+elif args.cube == "random":                              # same region as scene_publisher's random mode
+    x0, x1, y0, y1 = task_cfg["cube_random_region"]
     rng = np.random.default_rng(args.seed or None)
     while True:
-        cx, cy = rng.uniform(-0.35, -0.10), rng.uniform(0.05, 0.35)
-        if np.hypot(cx, cy) <= 0.5:
+        cx, cy = rng.uniform(x0, x1), rng.uniform(y0, y1)
+        if np.hypot(cx, cy) <= task_cfg["cube_random_max_radius"]:
             break
     print(f"[scene] random cube at x={cx:.3f} y={cy:.3f}", flush=True)
+    spots = {"pick_cube": (cx, cy)}
 else:
-    cx, cy = map(float, args.cube.split(","))
-cube = UsdGeom.Cube.Define(stage, "/World/pick_cube")
-cube.CreateSizeAttr(CUBE_SIZE)
-cube.CreateDisplayColorAttr([(0.15, 0.62, 0.86)])
-UsdGeom.Xformable(cube).AddTranslateOp().Set(Gf.Vec3d(cx, cy, TABLE_TOP + CUBE_SIZE / 2 + 0.001))
-UsdPhysics.RigidBodyAPI.Apply(cube.GetPrim())
-UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
-UsdPhysics.MassAPI.Apply(cube.GetPrim()).CreateMassAttr(0.01)      # light (hollow print), so the fingertips can hold it
+    spots = {"pick_cube": tuple(map(float, args.cube.split(","))) if args.cube else tuple(task_cfg["cube_fixed_position"])}
+
 cube_mat = UsdShade.Material.Define(stage, "/World/Materials/cube")
 cm = UsdPhysics.MaterialAPI.Apply(cube_mat.GetPrim())
 cm.CreateStaticFrictionAttr(1.0); cm.CreateDynamicFrictionAttr(0.9); cm.CreateRestitutionAttr(0.0)
-UsdShade.MaterialBindingAPI.Apply(cube.GetPrim()).Bind(cube_mat, UsdShade.Tokens.weakerThanDescendants, "physics")
+COLOURS = [(0.15, 0.62, 0.86), (0.95, 0.55, 0.15), (0.35, 0.72, 0.36), (0.80, 0.30, 0.45)]
+hand_links = [p.GetPath() for p in Usd.PrimRange(hand_base) if p.HasAPI(UsdPhysics.RigidBodyAPI)]
+cubes = {}
+for i, (name, (cx, cy)) in enumerate(spots.items()):
+    cube = UsdGeom.Cube.Define(stage, f"/World/{name}")
+    cube.CreateSizeAttr(CUBE_SIZE)
+    cube.CreateDisplayColorAttr([COLOURS[i % len(COLOURS)]])
+    UsdGeom.Xformable(cube).AddTranslateOp().Set(Gf.Vec3d(cx, cy, TABLE_TOP + CUBE_SIZE / 2 + 0.001))
+    UsdPhysics.RigidBodyAPI.Apply(cube.GetPrim())
+    UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+    UsdPhysics.MassAPI.Apply(cube.GetPrim()).CreateMassAttr(0.01)    # light (hollow print), so the fingertips can hold it
+    UsdShade.MaterialBindingAPI.Apply(cube.GetPrim()).Bind(cube_mat, UsdShade.Tokens.weakerThanDescendants, "physics")
+    if args.grasp == "fixed":
+        # the hand never pushes on the cube: MoveIt stops the fingers at its surface and ATTACH welds it to the palm.
+        # (finger contact on a cube resting on the table drives the gram-scale pad bodies unstable in PhysX)
+        UsdPhysics.FilteredPairsAPI.Apply(cube.GetPrim()).CreateFilteredPairsRel().SetTargets(hand_links)
+    cubes[name] = cube.GetPrim()
+print(f"[scene] cubes: {', '.join(f'{n} at {x:.2f},{y:.2f}' for n, (x, y) in spots.items())}", flush=True)
 
-if args.grasp == "fixed":
-    # the hand never pushes on the cube: MoveIt stops the fingers at its surface and ATTACH welds it to the palm.
-    # (finger contact on a cube resting on the table drives the gram-scale pad bodies unstable in PhysX)
-    hand_links = [p.GetPath() for p in Usd.PrimRange(hand_base) if p.HasAPI(UsdPhysics.RigidBodyAPI)]
-    UsdPhysics.FilteredPairsAPI.Apply(cube.GetPrim()).CreateFilteredPairsRel().SetTargets(hand_links)
 
 def world_pose(prim):
     return UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
@@ -261,22 +281,28 @@ fixed_path = Sdf.Path("/World/grasp_joint")
 
 
 def on_attach(msg):
+    verb, _, name = msg.data.partition(" ")
+    name = name or "pick_cube"
     if args.grasp != "fixed":
         node.get_logger().info(f"{msg.data}: friction grasp, nothing to do")
         return
-    if msg.data == "ATTACH" and not stage.GetPrimAtPath(fixed_path):
-        rel = world_pose(cube.GetPrim()) * world_pose(hand_base).GetInverse()   # cube in hand frame
+    cube = cubes.get(name)
+    if cube is None:
+        node.get_logger().warn(f"{msg.data}: no cube named {name}")
+        return
+    if verb == "ATTACH" and not stage.GetPrimAtPath(fixed_path):
+        rel = world_pose(cube) * world_pose(hand_base).GetInverse()   # cube in hand frame
         j = UsdPhysics.FixedJoint.Define(stage, fixed_path)
         j.CreateBody0Rel().SetTargets([hand_base.GetPath()])
         j.CreateBody1Rel().SetTargets([cube.GetPath()])
         t, r = rel.ExtractTranslation(), rel.ExtractRotationQuat()
         j.CreateLocalPos0Attr(Gf.Vec3f(t)); j.CreateLocalRot0Attr(Gf.Quatf(r))
         j.CreateLocalPos1Attr(Gf.Vec3f(0, 0, 0)); j.CreateLocalRot1Attr(Gf.Quatf(1, 0, 0, 0))
-        node.get_logger().info("ATTACH: fixed joint hand ↔ cube")
-    elif msg.data == "DETACH" and stage.GetPrimAtPath(fixed_path):
+        node.get_logger().info(f"ATTACH: fixed joint hand ↔ {name}")
+    elif verb == "DETACH" and stage.GetPrimAtPath(fixed_path):
         stage.RemovePrim(fixed_path)
-        UsdPhysics.RigidBodyAPI(cube.GetPrim()).CreateVelocityAttr().Set(Gf.Vec3f(0, 0, 0))   # wakes it: it was asleep
-        node.get_logger().info("DETACH: fixed joint removed")
+        UsdPhysics.RigidBodyAPI(cube).CreateVelocityAttr().Set(Gf.Vec3f(0, 0, 0))   # wakes it: it was asleep
+        node.get_logger().info(f"DETACH: fixed joint removed from {name}")
 
 
 node.create_subscription(String, "/isaac_attach_cmd", on_attach, 10)
@@ -284,15 +310,18 @@ node.create_subscription(String, "/isaac_attach_cmd", on_attach, 10)
 
 
 def publish_cube_tf(sim_t):
-    m = world_pose(cube.GetPrim())
-    t, q = m.ExtractTranslation(), m.ExtractRotationQuat()
-    ts = TransformStamped()
-    ts.header.stamp.sec = int(sim_t); ts.header.stamp.nanosec = int((sim_t % 1) * 1e9)
-    ts.header.frame_id, ts.child_frame_id = "world", "pick_cube"
-    ts.transform.translation.x, ts.transform.translation.y, ts.transform.translation.z = t
-    ts.transform.rotation.w = q.GetReal()
-    ts.transform.rotation.x, ts.transform.rotation.y, ts.transform.rotation.z = q.GetImaginary()
-    tf_pub.publish(TFMessage(transforms=[ts]))
+    msg = TFMessage()
+    for name, prim in cubes.items():
+        m = world_pose(prim)
+        t, q = m.ExtractTranslation(), m.ExtractRotationQuat()
+        ts = TransformStamped()
+        ts.header.stamp.sec = int(sim_t); ts.header.stamp.nanosec = int((sim_t % 1) * 1e9)
+        ts.header.frame_id, ts.child_frame_id = "world", name
+        ts.transform.translation.x, ts.transform.translation.y, ts.transform.translation.z = t
+        ts.transform.rotation.w = q.GetReal()
+        ts.transform.rotation.x, ts.transform.rotation.y, ts.transform.rotation.z = q.GetImaginary()
+        msg.transforms.append(ts)
+    tf_pub.publish(msg)
 
 
 # ---------------------------------------------------------------- run

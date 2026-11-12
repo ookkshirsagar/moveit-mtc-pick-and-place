@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "MoveIt Task Constructor pick and place for a UR5e with an Inspire RH56DFX hand"
+abstract: >-
+  Pick and place and stacking with a UR5e arm and an Inspire RH56DFX dexterous hand on ROS 2 Jazzy,
+  planned with MoveIt Task Constructor and executed on mock hardware or in NVIDIA Isaac Sim.
+type: software
+authors:
+  - given-names: Omkar Chandrakant
+    family-names: Kshirsagar
+repository-code: "https://github.com/ookkshirsagar/moveit-mtc-pick-and-place"
+license: Apache-2.0
+version: 1.0.0
+date-released: "2026-11-12"
+keywords:
+  - ros2
+  - moveit2
+  - moveit-task-constructor
+  - isaac-sim
+  - pick-and-place
+  - dexterous-manipulation
+  - ur5e

@@ -12,7 +12,7 @@ Issues and pull requests are welcome.
 
 Open an issue and include:
 
-- the launch command and its arguments (`side`, `hardware`, `cube_pose_mode`)
+- the launch command and its arguments (`side`, `hardware`, `task`, `cube_pose_mode`)
 - what you expected, and what happened instead
 - the relevant console output (the `mtc_node` and `move_group` lines are usually enough)
 
@@ -22,11 +22,13 @@ Open an issue and include:
 2. Keep each change focused. A new motion primitive goes in
    `ur5e_rh56dfx_manipulation/include/ur5e_rh56dfx_manipulation/motion_primitives/`, with its stage factory
    next to it.
-3. Check that the demo still runs with mock hardware, for both hands:
+3. Run the tests, and check that the demo still runs with mock hardware for both hands and for stacking:
    ```bash
    colcon build --symlink-install
+   colcon test && colcon test-result --verbose
    ros2 launch ur5e_rh56dfx_manipulation mtc_demo.launch.py side:=left
    ros2 launch ur5e_rh56dfx_manipulation mtc_demo.launch.py side:=right
+   ros2 launch ur5e_rh56dfx_manipulation mtc_demo.launch.py task:=stack
    ```
 4. Use [Conventional Commits](https://www.conventionalcommits.org/) messages, for example
    `feat: add a side-grasp generator` or `fix: stop the thumb at first contact`.

@@ -31,13 +31,18 @@ struct ConnectAndIKStages {
 
 // ==========================================================
 // Connect + ComputeIK stages (planner-consistent version)
+//
+// target is the pose of the TCP, or, if ik_object is given, the pose of
+// that attached object: the IK then solves for wherever the hand has to be
+// to put the object there, whatever its offset inside the hand.
 // ==========================================================
 inline ConnectAndIKStages createConnectAndIKStages(
     const std::shared_ptr<mtc::solvers::PipelinePlanner>& planner,
     const std::string& stage_prefix,
     const std::string& group,
     const geometry_msgs::msg::PoseStamped& target,
-    const std::string& arm_tip = "inspire_adapter_link")
+    const std::string& arm_tip = "inspire_adapter_link",
+    const std::string& ik_object = "")
 {
   // ---------------- CONNECT ----------------
   // Plans a collision-aware motion from current state to IK solution
@@ -95,7 +100,11 @@ inline ConnectAndIKStages createConnectAndIKStages(
   // Set IK frame:
   // - transform from tool tip → robot link (arm_tip)
   // - this is critical for correct grasp geometry
-  ik->setIKFrame(adapter_to_tcp, arm_tip);
+  if (ik_object.empty()) {
+    ik->setIKFrame(adapter_to_tcp, arm_tip);
+  } else {
+    ik->setIKFrame(ik_object);
+  }
 
   // Limit IK solutions (1 = deterministic, faster)
   ik->setMaxIKSolutions(1);

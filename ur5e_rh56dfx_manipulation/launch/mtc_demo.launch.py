@@ -32,6 +32,8 @@ def launch_setup(context, *args, **kwargs):
     hardware       = LaunchConfiguration("hardware").perform(context)
     cube_pose_mode = LaunchConfiguration("cube_pose_mode").perform(context)
     place_pose_mode = LaunchConfiguration("place_pose_mode").perform(context)
+    task = LaunchConfiguration("task").perform(context)
+    task_config = LaunchConfiguration("config").perform(context)
     random_seed = int(LaunchConfiguration("random_seed").perform(context))
     wait_for_enter = LaunchConfiguration("wait_for_enter").perform(context).lower() == "true"
     rviz = LaunchConfiguration("rviz").perform(context).lower() == "true"
@@ -45,6 +47,7 @@ def launch_setup(context, *args, **kwargs):
     prefix     = f"{side}_"
     moveit_pkg = get_package_share_directory("ur5e_rh56dfx_moveit_config")
     my_pkg     = get_package_share_directory("ur5e_rh56dfx_manipulation")
+    task_config = task_config or os.path.join(my_pkg, "config", "pick_place.yaml")
 
     moveit_config = (
         MoveItConfigsBuilder("ur5e_rh56dfx", package_name="ur5e_rh56dfx_moveit_config")
@@ -117,8 +120,10 @@ def launch_setup(context, *args, **kwargs):
         executable="scene_publisher",
         output="screen",
         parameters=[
+            task_config,
             {"use_sim_time": use_sim_time},
             {"cube_pose_mode": cube_pose_mode},
+            {"task": task},
             {"random_seed": random_seed},
         ],
     )
@@ -131,6 +136,7 @@ def launch_setup(context, *args, **kwargs):
         emulate_tty=True,
         parameters=[
             moveit_config.to_dict(),
+            task_config,
             {
                 "arm_group":      "arm",
                 "motion_type":    "PTP",
@@ -138,6 +144,7 @@ def launch_setup(context, *args, **kwargs):
                 "wait_for_enter": wait_for_enter,
                 "hand_prefix":    prefix,
                 "place_pose_mode": place_pose_mode,
+                "task":           task,
                 "random_seed":    random_seed,
             },
         ],
@@ -195,6 +202,10 @@ def generate_launch_description():
                               description="fixed | random | isaac (pose read from Isaac Sim /tf)"),
         DeclareLaunchArgument("place_pose_mode", default_value="fixed",
                               description="fixed (15 cm beside the cube) | random (a free spot on the table)"),
+        DeclareLaunchArgument("task", default_value="pick_place",
+                              description="pick_place (one cube) | stack (every cube in stack_cube_positions)"),
+        DeclareLaunchArgument("config", default_value="",
+                              description="task parameter file; default config/pick_place.yaml"),
         DeclareLaunchArgument("random_seed", default_value="0",
                               description="seed for the random modes; 0 = different every run"),
         OpaqueFunction(function=launch_setup),
