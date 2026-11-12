@@ -58,9 +58,16 @@ public:
       return;
     }
 
-    // ACM that forbids hand ↔ object contact, everything else as in the scene
+    // ACM that forbids hand ↔ object contact, everything else as in the scene. The group only holds
+    // the actuated joints, so collect every link they move: the distal phalanges, pads and tips hang
+    // off mimic joints and would otherwise keep the "allowed" entry and close through the object.
+    std::vector<std::string> hand_links;
+    for (const auto& [joint, value] : goal) {
+      for (const auto* l : state.getRobotModel()->getJointModel(joint)->getDescendantLinkModels())
+        if (!l->getShapes().empty()) hand_links.push_back(l->getName());
+    }
     auto acm = scene->getAllowedCollisionMatrix();
-    acm.setEntry(object_, jmg->getLinkModelNamesWithCollisionGeometry(), false);
+    acm.setEntry(object_, hand_links, false);
 
     // does any link moved by `joint` touch the object?
     auto touches_object = [&](const std::string& joint) {
