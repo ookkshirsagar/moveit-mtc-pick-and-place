@@ -57,12 +57,18 @@ Isaac Sim (click a clip for the MP4); the grid uses the left hand.
 
 <table>
   <tr>
-    <th>Right hand</th>
-    <th>Stacking three cubes</th>
+    <th width="50%">Left hand</th>
+    <th width="50%">Right hand</th>
   </tr>
   <tr>
-    <td><a href="docs/media/right_hand.mp4"><img src="docs/media/right_hand.gif" width="360" alt="The same pick and place with the right hand"/></a></td>
-    <td><a href="docs/media/stack_three_cubes.mp4"><img src="docs/media/stack_three_cubes.gif" width="360" alt="Three cubes picked one after another and stacked on top of each other"/></a></td>
+    <td><a href="docs/media/known_cube_known_place.mp4"><img src="docs/media/known_cube_known_place.gif" width="100%" alt="Pick and place with the left hand"/></a></td>
+    <td><a href="docs/media/right_hand.mp4"><img src="docs/media/right_hand.gif" width="100%" alt="The same pick and place with the right hand"/></a></td>
+  </tr>
+  <tr>
+    <th colspan="2">Stacking three cubes</th>
+  </tr>
+  <tr>
+    <td colspan="2"><a href="docs/media/stack_three_cubes.mp4"><img src="docs/media/stack_three_cubes.gif" width="100%" alt="Three cubes picked one after another and stacked on top of each other"/></a></td>
   </tr>
 </table>
 
