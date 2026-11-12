@@ -70,8 +70,10 @@ public:
       collision_detection::CollisionRequest req;
       req.contacts = true;
       req.max_contacts = 1000;
+      req.pad_environment_collisions = false;   // test the real surfaces, not the padded ones
+      req.pad_self_collisions = false;
       collision_detection::CollisionResult res;
-      scene->checkCollisionUnpadded(req, res, state, acm);
+      scene->checkCollision(req, res, state, acm);
       for (const auto& c : res.contacts) {
         const auto& [a, b] = c.first;
         if ((a == object_ && moved.count(b)) || (b == object_ && moved.count(a))) return true;

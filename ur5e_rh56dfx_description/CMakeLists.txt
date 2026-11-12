@@ -31,20 +31,6 @@ install(
 )
 
 # --------------------------------------------------
-# Install Meshes (recursive: visual/ + collision/)
-# --------------------------------------------------
-
-install(
-  DIRECTORY meshes
-  DESTINATION share/${PROJECT_NAME}
-  FILES_MATCHING
-  PATTERN "*.stl"
-  PATTERN "*.STL"
-  PATTERN "*.dae"
-  PATTERN "*.obj"
-)
-
-# --------------------------------------------------
 # Install RViz configs
 # --------------------------------------------------
 
@@ -58,5 +44,11 @@ install(
 # --------------------------------------------------
 # Ament Package
 # --------------------------------------------------
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  set(ament_cmake_flake8_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../setup.cfg)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
 ament_package()

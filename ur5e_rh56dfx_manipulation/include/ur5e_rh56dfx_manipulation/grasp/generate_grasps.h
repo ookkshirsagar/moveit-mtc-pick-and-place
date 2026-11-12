@@ -23,7 +23,7 @@ namespace mtc = moveit::task_constructor;
 //   from the pipeline (e.g., CurrentState or previous stage).
 // ==========================================================
 
-// 🔥 expose generator so pipeline can wire it
+// expose generator so pipeline can wire it
 struct GraspStages {
   std::unique_ptr<mtc::stages::ComputeIK> ik;
   mtc::stages::GenerateGraspPose* generator;
