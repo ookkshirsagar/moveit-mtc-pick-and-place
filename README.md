@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/ookkshirsagar/moveit-mtc-pick-and-place/actions/workflows/ci.yml"><img src="https://github.com/ookkshirsagar/moveit-mtc-pick-and-place/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <img src="https://img.shields.io/badge/ROS_2-Jazzy-22314E?logo=ros" alt="ROS 2 Jazzy"/>
   <img src="https://img.shields.io/badge/MoveIt_2-Task_Constructor-0A7BBB" alt="MoveIt Task Constructor"/>
   <img src="https://img.shields.io/badge/NVIDIA-Isaac_Sim-76B900?logo=nvidia" alt="NVIDIA Isaac Sim"/>
@@ -86,6 +87,7 @@ ros2 launch ur5e_rh56dfx_manipulation mtc_demo.launch.py
 | `cube_pose_mode` | `fixed` | `fixed`: cube at (-0.20, 0.13). `random`: a reachable position sampled each run (mock). `isaac`: the pose Isaac Sim publishes on `/tf` |
 | `place_pose_mode` | `fixed` | `fixed`: 15 cm from the cube along -y. `random`: a reachable target on the table, sampled each run |
 | `random_seed` | `0` | `0` samples a new pose every run; any other value repeats the same random poses |
+| `rviz` | `true` | `false` runs headless |
 | `wait_for_enter` | `false` | `true` waits for `ros2 service call /mtc_proceed std_srvs/srv/Trigger` before executing |
 | `use_sim_time` | `auto` | `auto` means true for `isaac`, false for `mock` |
 | `arm_ns` | `""` | optional namespace, for multi-arm setups |
@@ -225,6 +227,30 @@ every finger stops at the cube's surface, and the planned grasp is physically co
 
 ---
 
+## Tests and benchmark
+
+```bash
+colcon test --packages-select rh56dfx_description ur5e_rh56dfx_description \
+  ur5e_rh56dfx_moveit_config ur5e_rh56dfx_manipulation
+colcon test-result --verbose
+```
+
+`colcon test` runs flake8 and xmllint on every package, and an end-to-end launch test that runs the full pick
+and place headless on mock hardware and fails unless it completes. CI runs both on every push.
+
+`tools/benchmark_mock.py` repeats the task over random cube and place poses (one seed per run, so any run can
+be reproduced with `random_seed:=N`):
+
+| Runs (mock hardware, left hand) | Succeeded | Planning time, median / max | Run time incl. startup, median |
+|---|---|---|---|
+| 50 (seeds 1–50, random cube and place) | 50 (100 %) | 2.5 s / 2.7 s | 31 s |
+
+```bash
+python3 src/moveit-mtc-pick-and-place/tools/benchmark_mock.py --runs 50
+```
+
+---
+
 ## Packages
 
 | Package | Contents |
@@ -234,6 +260,7 @@ every finger stops at the cube's surface, and the planned grasp is physically co
 | `ur5e_rh56dfx_moveit_config` | SRDF (left/right), kinematics, OMPL + Pilz pipelines, controllers, `hardware` switch |
 | `ur5e_rh56dfx_manipulation` | MTC node and pipeline, motion primitives, scene publisher, Isaac helper nodes |
 | `isaac/` | Isaac Sim scene (`pick_place_scene.py`) and its launcher (`run_scene.sh`), not a ROS package |
+| `tools/` | `benchmark_mock.py`: success rate and planning time over random poses |
 
 ```bash
 ros2 launch rh56dfx_description display.launch.py side:=right       # hand only, joint sliders

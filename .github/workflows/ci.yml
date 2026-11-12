@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-and-test:
+    name: Build and test (ROS 2 Jazzy)
+    runs-on: ubuntu-24.04
+    container: ros:jazzy-ros-base
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: src/moveit-mtc-pick-and-place
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3-vcstool
+          vcs import src < src/moveit-mtc-pick-and-place/dependencies.repos
+          rosdep update --rosdistro jazzy
+          rosdep install -y --rosdistro jazzy --from-paths src --ignore-src
+
+      - name: Build
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          colcon build --event-handlers console_cohesion+ --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+      - name: Test (lint + end-to-end pick and place on mock hardware)
+        run: |
+          source install/setup.bash
+          colcon test --packages-select rh56dfx_description ur5e_rh56dfx_description \
+            ur5e_rh56dfx_moveit_config ur5e_rh56dfx_manipulation --event-handlers console_cohesion+
+          colcon test-result --verbose

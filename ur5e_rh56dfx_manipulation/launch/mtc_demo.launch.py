@@ -1,13 +1,14 @@
 import os
 
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
-    OpaqueFunction,
-    IncludeLaunchDescription,
-    RegisterEventHandler,
     GroupAction,
+    IncludeLaunchDescription,
     LogInfo,
+    OpaqueFunction,
+    RegisterEventHandler,
     TimerAction,
 )
 from launch.event_handlers import OnProcessExit
@@ -15,14 +16,13 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node, PushRosNamespace
 from moveit_configs_utils import MoveItConfigsBuilder
-from ament_index_python.packages import get_package_share_directory
 
 
 def _only_if_clean(next_actions, stage_name):
     def _handler(event, context):
         if event.returncode == 0:
             return next_actions
-        return [LogInfo(msg=f"❌ {stage_name} failed (exit {event.returncode}) — aborting MTC chain.")]
+        return [LogInfo(msg=f"{stage_name} failed (exit {event.returncode}) — aborting MTC chain.")]
     return _handler
 
 
@@ -34,6 +34,7 @@ def launch_setup(context, *args, **kwargs):
     place_pose_mode = LaunchConfiguration("place_pose_mode").perform(context)
     random_seed = int(LaunchConfiguration("random_seed").perform(context))
     wait_for_enter = LaunchConfiguration("wait_for_enter").perform(context).lower() == "true"
+    rviz = LaunchConfiguration("rviz").perform(context).lower() == "true"
 
     use_sim_time_arg = LaunchConfiguration("use_sim_time").perform(context).lower()
     if use_sim_time_arg == "auto":
@@ -160,7 +161,6 @@ def launch_setup(context, *args, **kwargs):
     # ── Build actions list ──────────────────────────────────────────
     # IMPORTANT: define actions list FIRST, then insert optionals
     actions = [
-        rviz_node,
         moveit_launch,
         wait_node,
         scene_after_wait,
@@ -168,6 +168,9 @@ def launch_setup(context, *args, **kwargs):
     ]
 
     # Insert optional nodes at front (start earliest)
+    if rviz:
+        actions.insert(0, rviz_node)
+
     if filter_node:
         actions.insert(0, filter_node)
 
@@ -186,6 +189,8 @@ def generate_launch_description():
         DeclareLaunchArgument("hardware",       default_value="mock"),
         DeclareLaunchArgument("use_sim_time",   default_value="auto"),
         DeclareLaunchArgument("wait_for_enter", default_value="false"),
+        DeclareLaunchArgument("rviz", default_value="true",
+                              description="false runs headless, e.g. for tests and benchmarks"),
         DeclareLaunchArgument("cube_pose_mode", default_value="fixed",
                               description="fixed | random | isaac (pose read from Isaac Sim /tf)"),
         DeclareLaunchArgument("place_pose_mode", default_value="fixed",
