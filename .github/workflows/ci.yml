@@ -39,3 +39,22 @@ jobs:
           colcon test --packages-select rh56dfx_description ur5e_rh56dfx_description \
             ur5e_rh56dfx_moveit_config ur5e_rh56dfx_manipulation --event-handlers console_cohesion+
           colcon test-result --verbose
+
+      - name: Test summary
+        if: always()
+        run: |
+          {
+            echo '### Test results'
+            echo '```'
+            colcon test-result --verbose 2>&1 | tail -40 || true
+            echo '```'
+            for f in build/*/Testing/Temporary/LastTestsFailed.log; do
+              [ -s "$f" ] || continue
+              pkg=$(echo "$f" | cut -d/ -f2)
+              echo "#### Output of the failed tests in $pkg"
+              echo '```'
+              grep -v -E "Calling (PlanningRequest|PlanningResponse)Adapter|Calling Planner" \
+                "build/$pkg/Testing/Temporary/LastTest.log" | tail -150
+              echo '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
