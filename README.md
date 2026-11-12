@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="docs/media/known_cube_known_place.mp4">
-    <img src="docs/media/known_cube_known_place.gif" width="720" alt="UR5e arm with an Inspire RH56DFX dexterous hand picking up a cube and placing it, simulated in NVIDIA Isaac Sim and planned with MoveIt Task Constructor"/>
+    <img src="docs/media/known_cube_known_place.gif" width="100%" alt="UR5e arm with an Inspire RH56DFX dexterous hand picking up a cube and placing it, simulated in NVIDIA Isaac Sim and planned with MoveIt Task Constructor"/>
   </a>
   <br/>
   <sub>▶ <a href="docs/media/known_cube_known_place.mp4">full video</a>: NVIDIA Isaac Sim, planned and executed by MoveIt 2 through ros2_control</sub>
