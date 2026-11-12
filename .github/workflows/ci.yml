@@ -58,3 +58,13 @@ jobs:
               echo '```'
             done
           } >> "$GITHUB_STEP_SUMMARY"
+          # annotations are shown on the run page; the key lines of each failed test go there too
+          for f in build/*/Testing/Temporary/LastTestsFailed.log; do
+            [ -s "$f" ] || continue
+            pkg=$(echo "$f" | cut -d/ -f2)
+            msg=$( { echo "failed: $(cut -d: -f2 "$f" | tr '\n' ' ')"
+                     grep -i -E "error|fail|died|exception|timeout|\[mtc_node\].*(Task|stage|plan)" \
+                       "build/$pkg/Testing/Temporary/LastTest.log" | grep -v -E "Calling Planning|Calling Planner" \
+                       | cut -c1-200 | tail -30; } | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=Failed tests in $pkg::$msg"
+          done
