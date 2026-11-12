@@ -243,11 +243,15 @@ be reproduced with `random_seed:=N`):
 
 | Runs (mock hardware, left hand) | Succeeded | Planning time, median / max | Run time incl. startup, median |
 |---|---|---|---|
-| 50 (seeds 1–50, random cube and place) | 50 (100 %) | 2.5 s / 2.7 s | 31 s |
+| 50 (seeds 1–50, random cube and place) | 50 (100 %) | 3.3 s / 3.7 s | 30 s |
 
 ```bash
 python3 src/moveit-mtc-pick-and-place/tools/benchmark_mock.py --runs 50
 ```
+
+The OMPL stages are randomised, so `mtc_node` re-plans from scratch if an attempt finds no solution
+(`planning_attempts`, default 3). None of the 50 runs above needed it; without it, 47 of 50 planned on the
+first attempt in an earlier batch. If planning fails, the log names the stage that failed.
 
 ---
 

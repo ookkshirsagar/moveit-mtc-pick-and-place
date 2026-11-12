@@ -86,6 +86,7 @@ private:
   std::string hand_prefix_;  // "left_" / "right_"
   std::string place_mode_;   // "fixed" (beside the cube) / "random" (a free spot on the table)
   int random_seed_ = 0;      // 0 = different every run
+  int planning_attempts_ = 3;  // OMPL stages are randomised: re-plan from scratch if no solution
   std::string motion_type_;
 
   // ── Planner ───────────────────────────────────────────────

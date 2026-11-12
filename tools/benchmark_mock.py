@@ -5,7 +5,8 @@
     python3 src/moveit-mtc-pick-and-place/tools/benchmark_mock.py --runs 50
 
 Each run launches mtc_demo.launch.py headless with cube_pose_mode:=random place_pose_mode:=random and
-random_seed:=N, so a run can be repeated by its seed. Prints one line per run and a Markdown summary.
+random_seed:=N, so a run can be repeated by its seed. Planning is retried up to planning_attempts times (default
+3). Prints one line per run and a Markdown summary.
 """
 import argparse
 import os
@@ -29,9 +30,10 @@ def run_once(seed, timeout, side):
            f"side:={side}", "cube_pose_mode:=random", "place_pose_mode:=random", f"random_seed:={seed}"]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                             start_new_session=True, env={**os.environ, "PYTHONUNBUFFERED": "1"})
-    start, outcome, plan_ms = time.monotonic(), "timeout", None
+    start, outcome, plan_ms, replans = time.monotonic(), "timeout", None, 0
     try:
         for line in proc.stdout:
+            replans += "Re-planning" in line
             if m := PLAN_TIME.search(line):
                 plan_ms = int(m.group(2))
             hit = next((v for k, v in OUTCOMES.items() if k in line), None)
@@ -47,7 +49,7 @@ def run_once(seed, timeout, side):
         except subprocess.TimeoutExpired:
             os.killpg(proc.pid, signal.SIGKILL)
             proc.wait()
-    return outcome, plan_ms, time.monotonic() - start
+    return outcome, plan_ms, replans, time.monotonic() - start
 
 
 def main():
@@ -60,10 +62,10 @@ def main():
 
     results = []
     for seed in range(a.first_seed, a.first_seed + a.runs):
-        outcome, plan_ms, total = run_once(seed, a.timeout, a.side)
-        results.append((seed, outcome, plan_ms, total))
+        outcome, plan_ms, replans, total = run_once(seed, a.timeout, a.side)
+        results.append((seed, outcome, plan_ms, total, replans))
         print(f"seed {seed:3d}  {outcome:17s}  plan {plan_ms if plan_ms is not None else '-':>5} ms  "
-              f"run {total:5.1f} s", flush=True)
+              f"run {total:5.1f} s" + (f"  ({replans} re-plan)" if replans else ""), flush=True)
 
     ok = [r for r in results if r[1] == "success"]
     plans = [r[2] for r in ok if r[2] is not None]
@@ -73,7 +75,8 @@ def main():
     print(f"| {len(results)} | {len(ok)} ({100 * len(ok) / len(results):.0f} %) | "
           f"{statistics.median(plans) / 1000:.1f} s / {max(plans) / 1000:.1f} s | "
           f"{statistics.median(totals):.0f} s |" if ok else "| no successful run |")
-    for seed, outcome, _, _ in results:
+    print(f"runs that needed a re-plan: {sum(1 for r in results if r[4])}")
+    for seed, outcome, *_ in results:
         if outcome != "success":
             print(f"failed: seed {seed} ({outcome})")
 

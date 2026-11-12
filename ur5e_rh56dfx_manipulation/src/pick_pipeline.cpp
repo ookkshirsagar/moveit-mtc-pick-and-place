@@ -27,7 +27,9 @@
 #include <moveit_msgs/msg/constraints.hpp>
 #include <moveit_msgs/msg/joint_constraint.hpp>
 
+#include <algorithm>
 #include <chrono>
+#include <sstream>
 #include <random>
 #include <future>
 #include <limits>
@@ -72,6 +74,7 @@ void ManipulationPipeline::loadParameters()
   hand_prefix_ = node_->declare_parameter<std::string>("hand_prefix", "left_");
   place_mode_  = node_->declare_parameter<std::string>("place_pose_mode", "fixed");
   random_seed_ = node_->declare_parameter<int>("random_seed", 0);
+  planning_attempts_ = std::max<int>(1, node_->declare_parameter<int>("planning_attempts", 3));
 }
 
 // ================================================================
@@ -420,8 +423,10 @@ bool ManipulationPipeline::plan()
 
   if (result.val != moveit_msgs::msg::MoveItErrorCodes::SUCCESS ||
       task_.solutions().empty()) {
+    std::ostringstream why;
+    task_.explainFailure(why);
     RCLCPP_ERROR(node_->get_logger(),
-        "Planning failed (code: %d) or no solutions found", result.val);
+        "No solution found (code: %d):\n%s", result.val, why.str().c_str());
     return false;
   }
 
@@ -484,9 +489,15 @@ void ManipulationPipeline::run()
   selected_solution_.reset();
 
   waitForPlanningScene();
-  initTask();
 
-  if (!plan()) {
+  bool planned = false;
+  for (int attempt = 1; attempt <= planning_attempts_ && !planned; ++attempt) {
+    if (attempt > 1)
+      RCLCPP_WARN(node_->get_logger(), "Re-planning (attempt %d of %d)", attempt, planning_attempts_);
+    initTask();
+    planned = plan();
+  }
+  if (!planned) {
     RCLCPP_ERROR(node_->get_logger(), "Planning failed");
     return;
   }
