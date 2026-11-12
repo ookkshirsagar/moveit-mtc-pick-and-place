@@ -81,7 +81,7 @@ void ManipulationPipeline::waitForPlanningScene()
 {
   auto client = node_->create_client<moveit_msgs::srv::GetPlanningScene>(
       "/get_planning_scene");
-  RCLCPP_INFO(node_->get_logger(), "⏳ Waiting for MoveIt planning scene...");
+  RCLCPP_INFO(node_->get_logger(), "Waiting for MoveIt planning scene...");
   while (rclcpp::ok()) {
     if (!client->wait_for_service(std::chrono::seconds(1))) {
       RCLCPP_WARN(node_->get_logger(), "Still waiting for /get_planning_scene...");
@@ -92,7 +92,7 @@ void ManipulationPipeline::waitForPlanningScene()
         moveit_msgs::msg::PlanningSceneComponents::WORLD_OBJECT_NAMES;
     auto future = client->async_send_request(request);
     if (future.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
-      RCLCPP_INFO(node_->get_logger(), "✅ Planning scene is ready");
+      RCLCPP_INFO(node_->get_logger(), "Planning scene is ready");
       return;
     }
     RCLCPP_WARN(node_->get_logger(), "Service available but scene not ready yet...");
@@ -260,7 +260,7 @@ void ManipulationPipeline::buildTask()
         target.pose.position.x = x_dist(gen);
         target.pose.position.y = y_dist(gen);
         target.pose.position.z = CUBE_CENTRE_Z + 0.25;
-        RCLCPP_INFO(node_->get_logger(), "📍 Random place: x=%.3f y=%.3f",
+        RCLCPP_INFO(node_->get_logger(), "Random place: x=%.3f y=%.3f",
                     target.pose.position.x, target.pose.position.y);
       } else {
         target.header.frame_id = "pick_cube";              // 15 cm beside where the cube was picked
@@ -373,7 +373,7 @@ ManipulationPipeline::selectBestSolution()
       best_sol   = sol;
     }
   }
-  RCLCPP_INFO(node_->get_logger(), "🏆 Best score: %.4f", best_score);
+  RCLCPP_INFO(node_->get_logger(), "Best score: %.4f", best_score);
   return best_sol;
 }
 
@@ -388,7 +388,7 @@ bool ManipulationPipeline::plan()
   try {
     task_.init();
   } catch (const std::exception& e) {
-    RCLCPP_ERROR(node_->get_logger(), "❌ Task init failed: %s", e.what());
+    RCLCPP_ERROR(node_->get_logger(), "Task init failed: %s", e.what());
     return false;
   }
 
@@ -403,16 +403,16 @@ bool ManipulationPipeline::plan()
   if (!connect_stage_ptrs_.empty()) {
     double actual = connect_stage_ptrs_[0]->properties().get<double>("max_distance");
     RCLCPP_INFO(node_->get_logger(),
-        "✅ Verified: pregrasp_connect_0 max_distance = %.3f", actual);
+        "Verified: pregrasp_connect_0 max_distance = %.3f", actual);
   }
 
   auto t_init_end = Clock::now();
-  RCLCPP_INFO(node_->get_logger(), "🚀 Starting planning...");
+  RCLCPP_INFO(node_->get_logger(), "Starting planning...");
 
   auto result     = task_.plan(10);
   auto t_plan_end = Clock::now();
 
-  RCLCPP_INFO(node_->get_logger(), "⏱ Init: %ld ms | Plan: %ld ms",
+  RCLCPP_INFO(node_->get_logger(), "Init: %ld ms | Plan: %ld ms",
       std::chrono::duration_cast<std::chrono::milliseconds>(
           t_init_end - start).count(),
       std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -421,20 +421,20 @@ bool ManipulationPipeline::plan()
   if (result.val != moveit_msgs::msg::MoveItErrorCodes::SUCCESS ||
       task_.solutions().empty()) {
     RCLCPP_ERROR(node_->get_logger(),
-        "❌ Planning failed (code: %d) or no solutions found", result.val);
+        "Planning failed (code: %d) or no solutions found", result.val);
     return false;
   }
 
   RCLCPP_INFO(node_->get_logger(),
-      "✅ Solutions found: %zu", task_.solutions().size());
+      "Solutions found: %zu", task_.solutions().size());
 
   selected_solution_ = selectBestSolution();
   if (!selected_solution_) {
-    RCLCPP_WARN(node_->get_logger(), "⚠️ Using first available solution");
+    RCLCPP_WARN(node_->get_logger(), "Using first available solution");
     selected_solution_ = task_.solutions().front();
   }
   if (!selected_solution_) {
-    RCLCPP_ERROR(node_->get_logger(), "❌ Still no valid solution");
+    RCLCPP_ERROR(node_->get_logger(), "Still no valid solution");
     return false;
   }
 
@@ -447,29 +447,29 @@ bool ManipulationPipeline::plan()
 bool ManipulationPipeline::execute()
 {
   if (!selected_solution_) {
-    RCLCPP_ERROR(node_->get_logger(), "❌ No solution selected");
+    RCLCPP_ERROR(node_->get_logger(), "No solution selected");
     return false;
   }
 
-  RCLCPP_INFO(node_->get_logger(), "🚀 Executing selected solution...");
+  RCLCPP_INFO(node_->get_logger(), "Executing selected solution...");
   auto result = task_.execute(*selected_solution_);
   RCLCPP_INFO(node_->get_logger(), "Execution result: val=%d", result.val);
 
   switch (result.val) {
     case moveit_msgs::msg::MoveItErrorCodes::SUCCESS:
-      RCLCPP_INFO(node_->get_logger(), "✅ Execution successful");
+      RCLCPP_INFO(node_->get_logger(), "Execution successful");
       return true;
     case moveit_msgs::msg::MoveItErrorCodes::CONTROL_FAILED:
-      RCLCPP_ERROR(node_->get_logger(), "❌ Controller rejected trajectory");
+      RCLCPP_ERROR(node_->get_logger(), "Controller rejected trajectory");
       break;
     case moveit_msgs::msg::MoveItErrorCodes::TIMED_OUT:
-      RCLCPP_ERROR(node_->get_logger(), "❌ Execution timed out");
+      RCLCPP_ERROR(node_->get_logger(), "Execution timed out");
       break;
     case moveit_msgs::msg::MoveItErrorCodes::PREEMPTED:
-      RCLCPP_ERROR(node_->get_logger(), "❌ Execution preempted");
+      RCLCPP_ERROR(node_->get_logger(), "Execution preempted");
       break;
     default:
-      RCLCPP_ERROR(node_->get_logger(), "❌ Unknown error: %d", result.val);
+      RCLCPP_ERROR(node_->get_logger(), "Unknown error: %d", result.val);
   }
   return false;
 }
@@ -479,7 +479,7 @@ bool ManipulationPipeline::execute()
 // ================================================================
 void ManipulationPipeline::run()
 {
-  RCLCPP_INFO(node_->get_logger(), "🚀 Running pipeline");
+  RCLCPP_INFO(node_->get_logger(), "Running pipeline");
   task_.clear();
   selected_solution_.reset();
 
@@ -487,14 +487,14 @@ void ManipulationPipeline::run()
   initTask();
 
   if (!plan()) {
-    RCLCPP_ERROR(node_->get_logger(), "❌ Planning failed");
+    RCLCPP_ERROR(node_->get_logger(), "Planning failed");
     return;
   }
 
   // Optional: wait for service trigger before executing
   bool wait_for_enter = node_->get_parameter_or("wait_for_enter", false);
   if (wait_for_enter) {
-    RCLCPP_INFO(node_->get_logger(), "⏸ Planning complete. In a NEW terminal run:");
+    RCLCPP_INFO(node_->get_logger(), "Planning complete. In a NEW terminal run:");
     RCLCPP_INFO(node_->get_logger(),
         "   ros2 service call /mtc_proceed std_srvs/srv/Trigger {}");
 
@@ -515,11 +515,11 @@ void ManipulationPipeline::run()
   }
 
   if (!execute()) {
-    RCLCPP_ERROR(node_->get_logger(), "❌ Execution failed");
+    RCLCPP_ERROR(node_->get_logger(), "Execution failed");
     return;
   }
 
-  RCLCPP_INFO(node_->get_logger(), "✅ Pick and place complete!");
+  RCLCPP_INFO(node_->get_logger(), "Pick and place complete!");
 }
 
 }  // namespace ur5e_rh56dfx_manipulation

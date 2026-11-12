@@ -50,6 +50,7 @@ ZERO_AT_HOME = {
     "left_thumb_2_joint",
 }
 
+
 class JointStateFilter(Node):
     def __init__(self):
         super().__init__("joint_state_filter")
@@ -70,31 +71,31 @@ class JointStateFilter(Node):
             f"Stripping {len(MIMIC_JOINTS)} mimic joints: {sorted(MIMIC_JOINTS)}")
 
     def _cb(self, msg: JointState):
-            filtered = JointState()
-            filtered.header = msg.header
+        filtered = JointState()
+        filtered.header = msg.header
 
-            for i, name in enumerate(msg.name):
-                if name in MIMIC_JOINTS:
-                    continue  # strip entirely
+        for i, name in enumerate(msg.name):
+            if name in MIMIC_JOINTS:
+                continue  # strip entirely
 
-                filtered.name.append(name)
+            filtered.name.append(name)
 
-                pos = msg.position[i] if i < len(msg.position) else 0.0
-                vel = msg.velocity[i] if i < len(msg.velocity) else 0.0
-                eff = msg.effort[i]   if i < len(msg.effort)    else 0.0
+            pos = msg.position[i] if i < len(msg.position) else 0.0
+            vel = msg.velocity[i] if i < len(msg.velocity) else 0.0
+            eff = msg.effort[i] if i < len(msg.effort) else 0.0
 
-                # Zero out hand joints — physics noise causes OMPL
-                # collision check failures vs mock_components behavior
-                if name in ZERO_AT_HOME:
-                    pos = 0.0
-                    vel = 0.0
+            # Zero out hand joints — physics noise causes OMPL
+            # collision check failures vs mock_components behavior
+            if name in ZERO_AT_HOME:
+                pos = 0.0
+                vel = 0.0
 
-                filtered.position.append(pos)
-                filtered.velocity.append(vel)
-                if msg.effort:
-                    filtered.effort.append(eff)
+            filtered.position.append(pos)
+            filtered.velocity.append(vel)
+            if msg.effort:
+                filtered.effort.append(eff)
 
-            self._pub.publish(filtered)
+        self._pub.publish(filtered)
 
 
 def main():

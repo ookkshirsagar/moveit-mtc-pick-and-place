@@ -3,11 +3,11 @@
 isaac_attach_manager.py — Fast state-machine based attach manager.
 Polls at 50Hz to minimize delay between MoveIt attach and Isaac FixedJoint.
 """
+from moveit_msgs.msg import PlanningSceneComponents
+from moveit_msgs.srv import GetPlanningScene
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-from moveit_msgs.srv import GetPlanningScene
-from moveit_msgs.msg import PlanningSceneComponents
 
 
 class IsaacAttachManager(Node):
@@ -25,7 +25,7 @@ class IsaacAttachManager(Node):
         # 50Hz polling — minimizes delay between MoveIt attach and Isaac joint
         self._timer = self.create_timer(0.02, self._check_attachment)
 
-        self.get_logger().info('🚀 Isaac attach manager (50Hz) started')
+        self.get_logger().info('Isaac attach manager (50Hz) started')
 
     def _check_attachment(self):
         if self._pending_request:
@@ -35,7 +35,7 @@ class IsaacAttachManager(Node):
             if not self._scene_client.wait_for_service(timeout_sec=0.0):
                 return
             self._service_ready = True
-            self.get_logger().info('✅ Planning scene service ready')
+            self.get_logger().info('Planning scene service ready')
 
         req = GetPlanningScene.Request()
         req.components.components = \
@@ -59,7 +59,7 @@ class IsaacAttachManager(Node):
         )
 
         if is_attached and not self._was_attached:
-            self.get_logger().info('🤝 ATTACH detected → sending to Isaac')
+            self.get_logger().info('ATTACH detected → sending to Isaac')
             msg = String()
             msg.data = 'ATTACH'
             # Publish 3 times to ensure Isaac receives it
@@ -68,7 +68,7 @@ class IsaacAttachManager(Node):
             self._was_attached = True
 
         elif not is_attached and self._was_attached:
-            self.get_logger().info('📦 DETACH detected → sending to Isaac')
+            self.get_logger().info('DETACH detected → sending to Isaac')
             msg = String()
             msg.data = 'DETACH'
             for _ in range(3):

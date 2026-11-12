@@ -19,7 +19,7 @@ public:
     scene_applied_(false),
     attempts_(0)
   {
-    RCLCPP_INFO(get_logger(), "🚀 ScenePublisher started");
+    RCLCPP_INFO(get_logger(), "ScenePublisher started");
 
     this->declare_parameter<std::string>("cube_pose_mode", "fixed");
     this->declare_parameter<int>("random_seed", 0);
@@ -27,13 +27,13 @@ public:
     cube_mode_  = this->get_parameter("cube_pose_mode").as_string();
     random_seed_ = this->get_parameter("random_seed").as_int();
 
-    RCLCPP_INFO(get_logger(), "📦 Cube pose mode: %s", cube_mode_.c_str());
+    RCLCPP_INFO(get_logger(), "Cube pose mode: %s", cube_mode_.c_str());
 
     if (cube_mode_ == "isaac") {
       tf_buffer_   = std::make_shared<tf2_ros::Buffer>(this->get_clock());
       tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
       RCLCPP_INFO(get_logger(),
-          "📡 Isaac mode: waiting for /tf frame 'pick_cube' → 'world'...");
+          "Isaac mode: waiting for /tf frame 'pick_cube' → 'world'...");
     }
 
     client_ = this->create_client<moveit_msgs::srv::ApplyPlanningScene>(
@@ -75,11 +75,11 @@ private:
         pose_out.position.y  = transform.transform.translation.y;
         pose_out.position.z  = transform.transform.translation.z;
         pose_out.orientation = transform.transform.rotation;
-        RCLCPP_INFO(get_logger(), "📡 Isaac cube pose: x=%.3f y=%.3f z=%.3f",
+        RCLCPP_INFO(get_logger(), "Isaac cube pose: x=%.3f y=%.3f z=%.3f",
             pose_out.position.x, pose_out.position.y, pose_out.position.z);
         return true;
       } catch (const tf2::TransformException& ex) {
-        RCLCPP_WARN(get_logger(), "⏳ Waiting for Isaac cube TF: %s", ex.what());
+        RCLCPP_WARN(get_logger(), "Waiting for Isaac cube TF: %s", ex.what());
         return false;
       }
     }
@@ -97,7 +97,7 @@ private:
       pose_out.position.y    = y;
       pose_out.position.z    = 0.8925;
       pose_out.orientation.w = 1.0;
-      RCLCPP_INFO(get_logger(), "📍 Random cube: x=%.3f y=%.3f z=%.3f",
+      RCLCPP_INFO(get_logger(), "Random cube: x=%.3f y=%.3f z=%.3f",
           pose_out.position.x, pose_out.position.y, pose_out.position.z);
       return true;
     }
@@ -107,7 +107,7 @@ private:
     pose_out.position.y    =  0.13;
     pose_out.position.z    =  0.8925;
     pose_out.orientation.w =  1.0;
-    RCLCPP_INFO(get_logger(), "📍 Fixed cube: x=%.3f y=%.3f z=%.3f",
+    RCLCPP_INFO(get_logger(), "Fixed cube: x=%.3f y=%.3f z=%.3f",
         pose_out.position.x, pose_out.position.y, pose_out.position.z);
     return true;
   }
@@ -136,14 +136,14 @@ private:
 
     ++attempts_;
     if (attempts_ > MAX_ATTEMPTS) {
-      RCLCPP_ERROR(get_logger(), "❌ Failed after %d attempts", MAX_ATTEMPTS);
+      RCLCPP_ERROR(get_logger(), "Failed after %d attempts", MAX_ATTEMPTS);
       timer_->cancel();
       rclcpp::shutdown();
       return;
     }
 
     if (!client_->wait_for_service(1s)) {
-      RCLCPP_WARN(get_logger(), "⏳ Waiting for /apply_planning_scene...");
+      RCLCPP_WARN(get_logger(), "Waiting for /apply_planning_scene...");
       return;
     }
 
@@ -159,12 +159,12 @@ private:
     client_->async_send_request(request,
         [this](rclcpp::Client<moveit_msgs::srv::ApplyPlanningScene>::SharedFuture future) {
           if (future.get()->success) {
-            RCLCPP_INFO(get_logger(), "🎯 Scene applied successfully");
+            RCLCPP_INFO(get_logger(), "Scene applied successfully");
             scene_applied_ = true;
             timer_->cancel();
             rclcpp::shutdown();  // exit → triggers MTC via OnProcessExit
           } else {
-            RCLCPP_ERROR(get_logger(), "❌ Scene apply failed, retrying...");
+            RCLCPP_ERROR(get_logger(), "Scene apply failed, retrying...");
           }
         });
   }

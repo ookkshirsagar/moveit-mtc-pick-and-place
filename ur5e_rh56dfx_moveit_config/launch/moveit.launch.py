@@ -1,19 +1,19 @@
 import os
 
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
-    OpaqueFunction,
-    RegisterEventHandler,
     ExecuteProcess,
     GroupAction,
+    OpaqueFunction,
+    RegisterEventHandler,
 )
-from launch.event_handlers import OnProcessExit
 from launch.conditions import IfCondition
+from launch.event_handlers import OnProcessExit
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node, PushRosNamespace
 from moveit_configs_utils import MoveItConfigsBuilder
-from ament_index_python.packages import get_package_share_directory
 
 
 def launch_setup(context, *args, **kwargs):
@@ -146,6 +146,6 @@ def generate_launch_description():
         DeclareLaunchArgument("arm_ns",           default_value=""),
         DeclareLaunchArgument("hardware",         default_value="mock"),
         DeclareLaunchArgument("use_sim_time",     default_value="auto"),   # auto-derives from hardware
-        DeclareLaunchArgument("debug_controllers",default_value="false"),
+        DeclareLaunchArgument("debug_controllers", default_value="false"),
         OpaqueFunction(function=launch_setup),
     ])

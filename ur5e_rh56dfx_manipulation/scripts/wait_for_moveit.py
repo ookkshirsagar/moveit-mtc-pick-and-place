@@ -6,11 +6,12 @@ One-shot readiness check. Exits 0 when:
   3. Arm joints are within tolerance of home position (optional, for Isaac mode)
 Exits 1 on timeout. Designed to be chained via OnProcessExit.
 """
-import sys
 import math
+import sys
+
+from moveit_msgs.srv import GetPlanningScene
 import rclpy
 from rclpy.node import Node
-from moveit_msgs.srv import GetPlanningScene
 from sensor_msgs.msg import JointState
 
 # ============================================================
@@ -59,19 +60,19 @@ class WaitForMoveIt(Node):
     def _joint_states_cb(self, msg: JointState):
         if not self._joint_states_received:
             self._joint_states_received = True
-            self.get_logger().info("✅ Joint states received — ready to plan")
+            self.get_logger().info("Joint states received — ready to plan")
 
         # Always update the latest positions
         for name, pos in zip(msg.name, msg.position):
             self._latest_joint_states[name] = pos
-            
+
         self._last_velocity = msg.velocity
 
     # =========================================================
     # Step 1: MoveIt service
     # =========================================================
     def wait_for_moveit_service(self, timeout_sec: float) -> bool:
-        self.get_logger().info("⏳ Waiting for /get_planning_scene service...")
+        self.get_logger().info("Waiting for /get_planning_scene service...")
         cli = self.create_client(GetPlanningScene, '/get_planning_scene')
 
         elapsed = 0.0
@@ -81,12 +82,12 @@ class WaitForMoveIt(Node):
             elapsed += step
             if elapsed >= timeout_sec:
                 self.get_logger().error(
-                    f"❌ /get_planning_scene not available after {timeout_sec:.0f}s"
+                    f"/get_planning_scene not available after {timeout_sec:.0f}s"
                 )
                 return False
             self.get_logger().info("...still waiting for MoveIt")
 
-        self.get_logger().info("✅ MoveIt is ready, waiting for joint states...")
+        self.get_logger().info("MoveIt is ready, waiting for joint states...")
         return True
 
     # =========================================================
@@ -101,7 +102,7 @@ class WaitForMoveIt(Node):
             elapsed += step
             if elapsed >= timeout_sec:
                 self.get_logger().error(
-                    f"❌ No /joint_states received after {timeout_sec:.0f}s"
+                    f"No /joint_states received after {timeout_sec:.0f}s"
                 )
                 return False
 
@@ -117,7 +118,7 @@ class WaitForMoveIt(Node):
         MTC reads CurrentState — avoiding false collisions with the cell wall.
         """
         self.get_logger().info(
-            f"⏳ Waiting for arm to reach home position "
+            f"Waiting for arm to reach home position "
             f"(tolerance ±{math.degrees(HOME_TOLERANCE_RAD):.1f}°)..."
         )
 
@@ -127,7 +128,7 @@ class WaitForMoveIt(Node):
         while rclpy.ok():
             rclpy.spin_once(self, timeout_sec=step)
             elapsed += step
-            
+
             max_vel = max(abs(v) for v in self._last_velocity) if hasattr(self, "_last_velocity") else 0.0
             self.get_logger().info(f"Home check: max velocity = {max_vel:.5f}")
 
@@ -136,7 +137,7 @@ class WaitForMoveIt(Node):
                 for name, target in ARM_HOME.items():
                     actual = self._latest_joint_states.get(name)
                     if actual is None:
-                        self.get_logger().warn(f"  ⚠ {name}: not in /joint_states")
+                        self.get_logger().warn(f"  {name}: not in /joint_states")
                     else:
                         err = abs(actual - target)
                         self.get_logger().warn(
@@ -144,7 +145,7 @@ class WaitForMoveIt(Node):
                             f"target={target:.4f} err={err:.4f}"
                         )
                 self.get_logger().error(
-                    f"❌ Arm did not reach home within {timeout_sec:.0f}s"
+                    f"Arm did not reach home within {timeout_sec:.0f}s"
                 )
                 return False
 
@@ -162,7 +163,7 @@ class WaitForMoveIt(Node):
 
             if not missing and at_home:
                 self.get_logger().info(
-                    f"✅ Arm is at home position — MTC may start"
+                    "Arm is at home position — MTC may start"
                 )
                 return True
 
@@ -173,7 +174,7 @@ class WaitForMoveIt(Node):
         Ensure robot is not moving (velocities ~ 0).
         Critical for Isaac physics.
         """
-        self.get_logger().info("⏳ Waiting for robot to fully stabilize (velocity ~ 0)...")
+        self.get_logger().info("Waiting for robot to fully stabilize (velocity ~ 0)...")
 
         elapsed = 0.0
         step = 0.1  # 10 Hz
@@ -183,7 +184,7 @@ class WaitForMoveIt(Node):
             elapsed += step
 
             if elapsed >= timeout_sec:
-                self.get_logger().warn("⚠️ Robot not fully stable, continuing anyway")
+                self.get_logger().warn("Robot not fully stable, continuing anyway")
                 return False
 
             # We need velocity data
@@ -193,8 +194,9 @@ class WaitForMoveIt(Node):
             max_vel = max(abs(v) for v in self._last_velocity)
 
             if max_vel < 0.01:
-                self.get_logger().info(f"✅ Robot stable (max velocity: {max_vel:.5f})")
+                self.get_logger().info(f"Robot stable (max velocity: {max_vel:.5f})")
                 return True
+
 
 # ============================================================
 # Main

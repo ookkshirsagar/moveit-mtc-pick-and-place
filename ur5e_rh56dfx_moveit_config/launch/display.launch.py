@@ -1,21 +1,19 @@
 import os
 
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
-    OpaqueFunction,
-    RegisterEventHandler,
     ExecuteProcess,
     GroupAction,
+    OpaqueFunction,
+    RegisterEventHandler,
 )
-from launch.event_handlers import OnProcessExit
 from launch.conditions import IfCondition
+from launch.event_handlers import OnProcessExit
 from launch.substitutions import LaunchConfiguration
-
 from launch_ros.actions import Node, PushRosNamespace
-
 from moveit_configs_utils import MoveItConfigsBuilder
-from ament_index_python.packages import get_package_share_directory
 
 
 def launch_setup(context, *args, **kwargs):
@@ -27,7 +25,6 @@ def launch_setup(context, *args, **kwargs):
     launch_rviz = LaunchConfiguration("launch_rviz")
 
     pkg = get_package_share_directory("ur5e_rh56dfx_moveit_config")
-    my_pkg = get_package_share_directory("ur5e_rh56dfx_manipulation")
 
     # ==========================================================
     # MoveIt config
@@ -80,7 +77,7 @@ def launch_setup(context, *args, **kwargs):
             package="controller_manager",
             executable="spawner",
             arguments=[name, "--controller-manager", "/controller_manager",
-                    "--controller-manager-timeout", "30"],
+                       "--controller-manager-timeout", "30"],
             parameters=[{"use_sim_time": use_sim_time}],
             output="screen",
         )
@@ -161,7 +158,7 @@ def launch_setup(context, *args, **kwargs):
         *spawner_actions,
 
         move_group,
-        rviz_node,   # ✅ now actually controlled by flag
+        rviz_node,
 
         controller_watchdog,
     ]
@@ -180,7 +177,6 @@ def generate_launch_description():
         DeclareLaunchArgument("use_sim_time", default_value="false"),
         DeclareLaunchArgument("debug_controllers", default_value="false"),
 
-        # ✅ now actually used
         DeclareLaunchArgument("launch_rviz", default_value="true"),
 
         OpaqueFunction(function=launch_setup),
