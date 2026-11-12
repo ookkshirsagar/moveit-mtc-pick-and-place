@@ -40,18 +40,18 @@ Isaac Sim (click a clip for the MP4); the grid uses the left hand.
 <table>
   <tr>
     <th></th>
-    <th>Known place</th>
-    <th>Random place</th>
+    <th width="45%">Known place</th>
+    <th width="45%">Random place</th>
   </tr>
   <tr>
     <th>Known cube</th>
-    <td><a href="docs/media/known_cube_known_place.mp4"><img src="docs/media/known_cube_known_place.gif" width="360" alt="Known cube position, known place pose"/></a></td>
-    <td><a href="docs/media/known_cube_random_place.mp4"><img src="docs/media/known_cube_random_place.gif" width="360" alt="Known cube position, random place pose"/></a></td>
+    <td><a href="docs/media/known_cube_known_place.mp4"><img src="docs/media/known_cube_known_place.gif" width="100%" alt="Known cube position, known place pose"/></a></td>
+    <td><a href="docs/media/known_cube_random_place.mp4"><img src="docs/media/known_cube_random_place.gif" width="100%" alt="Known cube position, random place pose"/></a></td>
   </tr>
   <tr>
     <th>Unknown cube</th>
-    <td><a href="docs/media/unknown_cube_known_place.mp4"><img src="docs/media/unknown_cube_known_place.gif" width="360" alt="Cube at a random position read from Isaac Sim, known place pose"/></a></td>
-    <td><a href="docs/media/unknown_cube_random_place.mp4"><img src="docs/media/unknown_cube_random_place.gif" width="360" alt="Cube at a random position read from Isaac Sim, random place pose"/></a></td>
+    <td><a href="docs/media/unknown_cube_known_place.mp4"><img src="docs/media/unknown_cube_known_place.gif" width="100%" alt="Cube at a random position read from Isaac Sim, known place pose"/></a></td>
+    <td><a href="docs/media/unknown_cube_random_place.mp4"><img src="docs/media/unknown_cube_random_place.gif" width="100%" alt="Cube at a random position read from Isaac Sim, random place pose"/></a></td>
   </tr>
 </table>
 
