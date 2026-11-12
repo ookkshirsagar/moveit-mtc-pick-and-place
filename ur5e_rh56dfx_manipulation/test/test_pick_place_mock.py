@@ -1,4 +1,5 @@
 """End-to-end check: the full pick and place succeeds on mock hardware, headless."""
+import re
 import unittest
 
 from launch import LaunchDescription
@@ -12,6 +13,9 @@ import launch_testing.asserts
 import pytest
 
 TIMEOUT = 240.0  # seconds, planning plus execution with the default velocity scaling
+# every way the run can end, so a failure is reported at once instead of after the timeout
+OUTCOME = re.compile(r"Pick and place complete!|Planning failed|Execution failed|aborting MTC chain|"
+                     r"Failed after \d+ attempts")
 
 
 @pytest.mark.launch_test
@@ -27,4 +31,7 @@ def generate_test_description():
 class TestPickPlace(unittest.TestCase):
 
     def test_pick_and_place_completes(self, proc_output):
-        proc_output.assertWaitFor("Pick and place complete!", timeout=TIMEOUT)
+        proc_output.assertWaitFor(OUTCOME, timeout=TIMEOUT)
+        outcome = [OUTCOME.search(o.text.decode(errors="replace")) for o in proc_output]
+        outcome = next(m.group(0) for m in outcome if m)
+        self.assertEqual(outcome, "Pick and place complete!", f"the pick and place ended with: {outcome}")
