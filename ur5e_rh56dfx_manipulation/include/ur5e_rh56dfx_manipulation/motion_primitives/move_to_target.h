@@ -10,10 +10,10 @@
 namespace mtc = moveit::task_constructor;
 
 // ==========================================================
-// Generic MoveTo named target stage (OMPL-compatible)
+// Generic MoveTo named target stage
 // ==========================================================
 // Creates a reusable stage for moving a joint group to a named configuration
-// using a full motion planner (e.g. OMPL)
+// using a pipeline planner (Pilz PTP in this package)
 inline std::unique_ptr<mtc::Stage> createMoveToNamedTargetStage(
     const std::shared_ptr<mtc::solvers::PipelinePlanner>& planner,
     const std::string& stage_name,
@@ -22,7 +22,7 @@ inline std::unique_ptr<mtc::Stage> createMoveToNamedTargetStage(
 {
   // MoveTo stage:
   // - Plans a motion from current state → target configuration
-  // - Uses the provided planner (OMPL here) for collision-aware planning
+  // - Uses the provided planner for collision-aware planning
   auto stage = std::make_unique<mtc::stages::MoveTo>(stage_name, planner);
 
   // Define which joint group to control (e.g. "arm")

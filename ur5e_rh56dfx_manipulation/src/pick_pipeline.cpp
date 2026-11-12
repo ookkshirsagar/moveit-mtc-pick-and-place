@@ -50,10 +50,6 @@ ManipulationPipeline::ManipulationPipeline(const rclcpp::Node::SharedPtr& node)
 {
   loadParameters();
 
-  // OMPL — used for approach/place Cartesian stages and move_to_place
-  ompl_planner_ = std::make_shared<mtc::solvers::PipelinePlanner>(
-      node_, "ompl", "RRTConnectkConfigDefault");
-
   // Pilz PTP — smooth deterministic paths for move_home and pregrasp connect
   // No random exploration → no jerky intermediate poses
   pilz_planner_ = std::make_shared<mtc::solvers::PipelinePlanner>(
@@ -522,7 +518,7 @@ void ManipulationPipeline::run()
 
     rclcpp::Rate rate(10);
     while (rclcpp::ok() && !triggered) rate.sleep();
-    RCLCPP_INFO(node_->get_logger(), "▶ Proceeding with execution");
+    RCLCPP_INFO(node_->get_logger(), "Proceeding with execution");
   }
 
   if (!execute()) {

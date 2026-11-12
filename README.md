@@ -18,7 +18,7 @@
 
 A pick-and-place pipeline for a **Universal Robots UR5e** arm fitted with an **Inspire RH56DFX** six-DoF
 dexterous hand. The task is planned end to end with **MoveIt Task Constructor (MTC)**: grasp sampling, IK,
-Pilz/OMPL motion planning, Cartesian approach and lift, a contact-aware hand closure, attach, place and release.
+Pilz PTP motion planning, Cartesian approach and lift, a contact-aware hand closure, attach, place and release.
 The same task runs on two `ros2_control` backends:
 
 | `hardware:=` | Backend | What you get |
@@ -160,8 +160,11 @@ sequenceDiagram
 
     I->>S: cube pose on /tf
     S->>G: add the cube to the planning scene
-    M->>G: plan the task (grasps, IK, Pilz/OMPL)
-    G-->>M: solutions, cheapest one executed
+    loop up to planning_attempts (default 3)
+        M->>G: plan the task (grasps, IK, Pilz PTP, Cartesian)
+        G-->>M: solutions, or the stage that failed
+    end
+    Note over M: execute the cheapest solution
     M->>C: approach, close until contact
     C->>I: /joint_command
     M->>G: attach the cube to the hand
@@ -191,12 +194,14 @@ mode is experimental, because the gram-scale finger pads make PhysX contact unst
 | 1 | current state → `home` | Pilz PTP |
 | 2 | open the hand | joint interpolation |
 | 3 | sample grasp candidates around the cube (`grasp/generate_grasps.h`) | — |
-| 4 | move to pregrasp: IK + connect, one branch per candidate | Pilz PTP / OMPL |
-| 5 | approach straight down, stopping just above the cube | Cartesian |
-| 6 | **close until contact**: each finger stops at the cube's surface (`close_until_contact.h`) | joint interpolation |
-| 7 | attach the cube to `<side>_hand_base`, retreat and lift 15 cm | Cartesian |
-| 8 | move to the place pose, set the cube down | IK + connect, Cartesian |
-| 9 | release, detach, retreat and return `home` | Pilz PTP |
+| 4 | move to pregrasp, 25 cm above the cube: IK + connect, one branch per candidate | Pilz PTP |
+| 5 | pre-curl the fingers so they clear the cube's top edge | joint interpolation |
+| 6 | approach straight down, 16.5 cm | Cartesian |
+| 7 | **close until contact**: every finger link stops at the cube's surface (`close_until_contact.h`) | joint interpolation |
+| 8 | attach the cube to `<side>_hand_base`, retreat and lift 15 cm | Cartesian |
+| 9 | move to the place pose: IK + connect | Pilz PTP |
+| 10 | set down, loosen the grip, detach | Cartesian, joint interpolation |
+| 11 | retreat up, open the hand in the air, return `home` | Cartesian, Pilz PTP |
 
 ```mermaid
 flowchart TD
@@ -206,24 +211,49 @@ flowchart TD
     D --> E1[pregrasp IK + connect]
     D --> E2[pregrasp IK + connect]
     D --> E3[" … one branch per candidate"]
-    E1 & E2 & E3 --> F[approach · Cartesian]
-    F --> G["close until contact<br/>each finger stops at the surface"]
+    E1 & E2 & E3 --> PC[pre-curl fingers]
+    PC --> F[approach · Cartesian]
+    F --> G["close until contact<br/>every finger link stops at the surface"]
     G --> H[attach cube · lift 15 cm]
     H --> P{place_pose_mode}
     P -- fixed --> P1[15 cm from the cube along -y]
-    P -- random --> P2[sampled reachable target]
+    P -- random --> P2[sampled free spot on the table]
     P1 & P2 --> I[move to place · set down]
-    I --> J[open · detach · retreat]
-    J --> K([home])
+    I --> J[loosen grip · detach]
+    J --> R[retreat up · open hand]
+    R --> K([home])
+```
+
+```mermaid
+flowchart LR
+    S([start]) --> T[build the task]
+    T --> PL{plan}
+    PL -- solution --> X[execute the cheapest] --> OK([Pick and place complete!])
+    PL -- "no solution:<br/>log the failing stage" --> N{attempts left?}
+    N -- yes --> T
+    N -- no --> F([Planning failed])
 ```
 
 MTC plans several solutions, scores them and executes the cheapest.
 
 **Contact-aware closing.** Grasping requires hand ↔ object collisions to be allowed, so a plain
-`MoveTo("close")` drives the fingers straight through the object. `CloseUntilContact` closes the thumb
-rotation first, then each finger, and the thumb flexion last. For each joint it bisects the closing fraction
-against a collision check that only counts contacts between the object and that joint's own links. So
-every finger stops at the cube's surface, and the planned grasp is physically consistent.
+`MoveTo("close")` drives the fingers straight through the object. `CloseUntilContact` forbids hand ↔ object
+contact again for its own check, on every link a hand joint moves, including the distal phalanges and pads
+that hang off mimic joints. It closes the thumb rotation first, then each finger, and the thumb flexion
+last, bisecting each joint's closing fraction until its links just touch the cube. So every finger stops at
+the cube's surface and the planned grasp is physically consistent.
+
+```mermaid
+flowchart TD
+    A[next actuated hand joint] --> B["links it moves:<br/>proximal + mimic distal + pads"]
+    B --> C{"fully closed:<br/>touches the cube?"}
+    C -- no --> D[close fully]
+    C -- yes --> E["bisect the closing fraction<br/>10 steps, about 0.1 % of travel"]
+    E --> F[stop at the last contact-free fraction]
+    D & F --> G{more joints?}
+    G -- yes --> A
+    G -- no --> H[joint-interpolated close trajectory]
+```
 
 ---
 
@@ -249,7 +279,7 @@ be reproduced with `random_seed:=N`):
 python3 src/moveit-mtc-pick-and-place/tools/benchmark_mock.py --runs 50
 ```
 
-The OMPL stages are randomised, so `mtc_node` re-plans from scratch if an attempt finds no solution
+IK is seeded randomly, so `mtc_node` re-plans from scratch if an attempt finds no solution
 (`planning_attempts`, default 3). None of the 50 runs above needed it; without it, 47 of 50 planned on the
 first attempt in an earlier batch. If planning fails, the log names the stage that failed.
 

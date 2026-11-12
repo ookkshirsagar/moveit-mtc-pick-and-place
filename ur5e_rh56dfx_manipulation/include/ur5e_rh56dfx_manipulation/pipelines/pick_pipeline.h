@@ -37,7 +37,7 @@ namespace ur5e_rh56dfx_manipulation
 //
 // 2. FixedState vs CurrentState:
 //    In Isaac mode, /joint_states includes mimic/distal joints with
-//    physics noise that confuses OMPL collision checking. We use
+//    physics noise that confuses collision checking. We use
 //    FixedState seeded from exact SRDF "home" joint values instead
 //    of CurrentState. The world (cube etc.) is preserved by fetching
 //    the full planning scene from move_group via getSceneWithWorld().
@@ -86,11 +86,10 @@ private:
   std::string hand_prefix_;  // "left_" / "right_"
   std::string place_mode_;   // "fixed" (beside the cube) / "random" (a free spot on the table)
   int random_seed_ = 0;      // 0 = different every run
-  int planning_attempts_ = 3;  // OMPL stages are randomised: re-plan from scratch if no solution
+  int planning_attempts_ = 3;  // IK is seeded randomly: re-plan from scratch if no solution
   std::string motion_type_;
 
   // ── Planner ───────────────────────────────────────────────
-  std::shared_ptr<mtc::solvers::PipelinePlanner> ompl_planner_;
   std::shared_ptr<mtc::solvers::PipelinePlanner> pilz_planner_;
 
   // ── Runtime ───────────────────────────────────────────────

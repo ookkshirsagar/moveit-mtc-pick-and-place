@@ -9,7 +9,7 @@ Why this is needed:
   Isaac Sim publishes all 20 joints including mimic distal joints
   (left_index_2, left_middle_2, etc.) with small non-zero physics
   positions due to finite drive stiffness. When MoveIt's CurrentState
-  stage reads these, OMPL collision checking sees slightly wrong finger
+  stage reads these, collision checking sees slightly wrong finger
   geometry and fails to find paths that succeed with mock_components.
 
   This filter strips the 6 mimic joints so MoveIt only sees the 14
@@ -38,7 +38,7 @@ MIMIC_JOINTS = {
 # Hand primary joints — pass through but zero out physics noise.
 # These joints are commanded to 0 at home; the ~0.01 rad deviation
 # is drive stiffness error, not meaningful state. Zeroing them makes
-# OMPL see the same collision geometry as mock_components does.
+# MoveIt see the same collision geometry as mock_components does.
 ZERO_AT_HOME = {
     "left_wrist_yaw_joint",
     "left_hand_base_joint",
@@ -84,7 +84,7 @@ class JointStateFilter(Node):
             vel = msg.velocity[i] if i < len(msg.velocity) else 0.0
             eff = msg.effort[i] if i < len(msg.effort) else 0.0
 
-            # Zero out hand joints — physics noise causes OMPL
+            # Zero out hand joints — physics noise causes
             # collision check failures vs mock_components behavior
             if name in ZERO_AT_HOME:
                 pos = 0.0
